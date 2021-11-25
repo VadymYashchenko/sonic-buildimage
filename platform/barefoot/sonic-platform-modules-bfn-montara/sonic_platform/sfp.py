@@ -16,6 +16,7 @@ try:
 
     from sonic_platform_base.sfp_base import SfpBase
     from sonic_platform_base.sonic_sfp.sfputilbase import SfpUtilBase
+    from sonic_py_common import device_info
 except ImportError as e:
     raise ImportError (str(e) + "- required module not found")
 
@@ -60,10 +61,13 @@ class SfpUtil(SfpUtilBase):
 
     def update_port_info(self):
         def qsfp_max_port_get(client):
-            return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port();
+            return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port()
 
         if self.QSFP_PORT_END == 0:
+            platform = device_info.get_platform()
             self.QSFP_PORT_END = thrift_try(qsfp_max_port_get)
+            if platform in ["x86_64-accton_as9516_32d-r0", "x86_64-accton_as9516bf_32d-r0"]:
+                self.QSFP_PORT_END -= 1
             self.PORT_END = self.QSFP_PORT_END
             self.PORTS_IN_BLOCK = self.QSFP_PORT_END
 
@@ -237,6 +241,7 @@ class Sfp(SfpBase):
         return Sfp.sfputil.get_transceiver_change_event()
 
     def __init__(self, port_num):
+        self.index = port_num
         self.port_num = port_num
         SfpBase.__init__(self)
 
@@ -269,6 +274,40 @@ class Sfp(SfpBase):
 
     def get_change_event(self, timeout=0):
         return Sfp.get_transceiver_change_event(timeout)
+
+    def is_replaceable(self):
+        """
+        Indicate whether this device is replaceable.
+        Returns:
+            bool: True if it is replaceable.
+        """
+        return True
+
+    def get_name(self):
+        """
+        Retrieves the name of the device
+            Returns:
+            string: The name of the device
+        """
+        return "sfp{}".format(self.index)
+
+    def get_model(self):
+        """
+        Retrieves the model number (or part number) of the device
+        Returns:
+            string: Model/part number of device
+        """
+        info = self.get_transceiver_info()
+        return info.get("model", "N/A")
+
+    def get_serial(self):
+        """
+        Retrieves the serial number of the device
+        Returns:
+            string: Serial number of device
+        """
+        info = self.get_transceiver_info()
+        return info.get("serial", "N/A")
 
 def sfp_list_get():
     sfp_list = []
