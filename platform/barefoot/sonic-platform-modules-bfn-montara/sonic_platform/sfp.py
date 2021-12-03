@@ -63,10 +63,19 @@ class SfpUtil(SfpUtilBase):
         def qsfp_max_port_get(client):
             return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port()
 
+    def update_port_info(self):
+        def qsfp_max_port_get(client):
+            return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port()
+
         if self.QSFP_PORT_END == 0:
             platform = device_info.get_platform()
             self.QSFP_PORT_END = thrift_try(qsfp_max_port_get)
-            if platform in ["x86_64-accton_as9516_32d-r0", "x86_64-accton_as9516bf_32d-r0"]:
+            exclude_cpu_port = [
+                "x86_64-accton_as9516_32d-r0",
+                "x86_64-accton_as9516bf_32d-r0",
+                "x86_64-accton_wedge100bf_32x-r0"
+            ]
+            if platform in exclude_cpu_port:
                 self.QSFP_PORT_END -= 1
             self.PORT_END = self.QSFP_PORT_END
             self.PORTS_IN_BLOCK = self.QSFP_PORT_END
