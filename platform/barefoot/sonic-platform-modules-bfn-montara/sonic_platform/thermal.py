@@ -68,11 +68,12 @@ def _value_get(d: dict, key_prefix, key_suffix=''):
 
 # Thermal -> ThermalBase -> DeviceBase
 class Thermal(ThermalBase):
-    def __init__(self, chip, label):
+    def __init__(self, chip, label, index = 0):
         self.__chip = chip
         self.__label = label
         self.__name = f"{chip}:{label}".lower().replace(' ', '-')
         self.__collect_temp = []
+        self.__index = index
 
     def __get(self, attr_prefix, attr_suffix):
         sensor_data = _sensors_get().get(self.__chip, {}).get(self.__label, {})
@@ -127,11 +128,16 @@ class Thermal(ThermalBase):
     def is_replaceable(self):
         return False
 
+    def get_position_in_parent(self):
+        return self.__index
+
 def thermal_list_get():
     l = []
+    index = 0
     for chip, chip_data in _sensors_get().items():
         for sensor, sensor_data in chip_data.items():
             # add only temperature sensors
             if _value_get(sensor_data, "temp") is not None:
-                l.append(Thermal(chip, sensor))
+                l.append(Thermal(chip, sensor, index))
+                index += 1
     return l
