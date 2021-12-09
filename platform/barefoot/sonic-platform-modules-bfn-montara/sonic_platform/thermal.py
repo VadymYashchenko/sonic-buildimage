@@ -72,7 +72,7 @@ class Thermal(ThermalBase):
         self.__chip = chip
         self.__label = label
         self.__name = f"{chip}:{label}".lower().replace(' ', '-')
-        self.collect_temp = []
+        self.__collect_temp = []
 
     def __get(self, attr_prefix, attr_suffix):
         sensor_data = _sensors_get().get(self.__chip, {}).get(self.__label, {})
@@ -82,8 +82,8 @@ class Thermal(ThermalBase):
     # ThermalBase interface methods:
     def get_temperature(self) -> float:
         temp = self.__get('temp', 'input')
-        self.collect_temp.append(temp)
-        self.collect_temp.sort()
+        self.__collect_temp.append(temp)
+        self.__collect_temp.sort()
         return float(temp)
 
     def get_high_threshold(self) -> float:
@@ -102,12 +102,12 @@ class Thermal(ThermalBase):
         return 'N/A'
 
     def get_minimum_recorded(self) -> float:
-        temp = self.collect_temp[0] if len(self.collect_temp) > 0 else 0.1
+        temp = self.__collect_temp[0] if len(self.__collect_temp) > 0 else 0.1
         temp = temp if temp > 0.0 else 0.1
         return float(temp)
 
     def get_maximum_recorded(self) -> float:
-        temp = self.collect_temp[-1] if len(self.collect_temp) > 0 else 100.0
+        temp = self.__collect_temp[-1] if len(self.__collect_temp) > 0 else 100.0
         temp = temp if temp <= 100.0 else 100.0
         return float(temp)
 
