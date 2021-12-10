@@ -13,11 +13,18 @@ try:
 
     from .platform_thrift_client import ThriftClient
     from .platform_thrift_client import thrift_try
+    from .platform_thrift_client import pltfm_mgr_try
 
     from sonic_platform_base.sfp_base import SfpBase
     from sonic_platform_base.sonic_sfp.sfputilbase import SfpUtilBase
+    from sonic_py_common import device_info
 except ImportError as e:
     raise ImportError (str(e) + "- required module not found")
+
+SFP_TYPE = "SFP"
+QSFP_TYPE = "QSFP"
+QSFP_DD_TYPE = "QSFP_DD"
+
 
 class SfpUtil(SfpUtilBase):
     """Platform-specific SfpUtil class"""
@@ -60,10 +67,22 @@ class SfpUtil(SfpUtilBase):
 
     def update_port_info(self):
         def qsfp_max_port_get(client):
-            return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port();
+            return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port()
+
+    def update_port_info(self):
+        def qsfp_max_port_get(client):
+            return client.pltfm_mgr.pltfm_mgr_qsfp_get_max_port()
 
         if self.QSFP_PORT_END == 0:
+            platform = device_info.get_platform()
             self.QSFP_PORT_END = thrift_try(qsfp_max_port_get)
+            exclude_cpu_port = [
+                "x86_64-accton_as9516_32d-r0",
+                "x86_64-accton_as9516bf_32d-r0",
+                "x86_64-accton_wedge100bf_32x-r0"
+            ]
+            if platform in exclude_cpu_port:
+                self.QSFP_PORT_END -= 1
             self.PORT_END = self.QSFP_PORT_END
             self.PORTS_IN_BLOCK = self.QSFP_PORT_END
 
@@ -106,6 +125,30 @@ class SfpUtil(SfpUtilBase):
             return client.pltfm_mgr.pltfm_mgr_qsfp_lpmode_set(port_num, lpmode)
 
         status = thrift_try(qsfp_lpmode_set)
+
+        return (status == 0)
+
+    def get_tx_disable_channel(self, port_num, channel_num):
+        # Check for invalid port_num
+        if port_num < self.port_start or port_num > self.port_end:
+            return True
+
+        def qsfp_tx_is_disabled(client):
+            return client.pltfm_mgr.pltfm_mgr_qsfp_tx_is_disabled(port_num, channel_num)
+
+        tx_is_disabled = thrift_try(qsfp_tx_is_disabled, 1)
+
+        return tx_is_disabled
+
+    def tx_disable_channel(self, port_num, channel_mask, disable):
+        # Check for invalid port_num
+        if port_num < self.port_start or port_num > self.port_end:
+            return False
+
+        def qsfp_tx_disable_channel(client):
+            return client.pltfm_mgr.pltfm_mgr_qsfp_tx_disable(port_num, channel_mask, disable)
+
+        status = thrift_try(qsfp_tx_disable_channel)
 
         return (status == 0)
 
@@ -237,7 +280,9 @@ class Sfp(SfpBase):
         return Sfp.sfputil.get_transceiver_change_event()
 
     def __init__(self, port_num):
+        self.index = port_num
         self.port_num = port_num
+        self.sfp_type = QSFP_TYPE
         SfpBase.__init__(self)
 
     def get_presence(self):
@@ -260,15 +305,254 @@ class Sfp(SfpBase):
             return u.get_transceiver_info_dict(self.port_num)
 
     def get_transceiver_bulk_status(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_transceiver_dom_info_dict(self.port_num)
+        status = dict()
 
-    def get_transceiver_threshold_info(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_transceiver_dom_threshold_info_dict(self.port_num)
+        rx_los = self.get_rx_los()
+        if rx_los is not None:
+            status['rx_los'] = any(rx_los)
+
+        tx_fault = self.get_tx_fault()
+        if tx_fault is not None:
+            status['tx_fault'] = any(tx_fault)
+
+        lp_mode = self.get_lpmode()
+        if lp_mode is not None:
+            status['lp_mode'] = lp_mode
+
+        temperature = self.get_temperature()
+        if temperature is not None:
+            status['temperature'] = temperature
+
+        voltage = self.get_voltage()
+        if voltage is not None:
+            status['voltage'] = int(voltage)
+
+        tx_bias = self.get_tx_bias()
+        if tx_bias is not None:
+            for n, p in enumerate(tx_bias, 1):
+                status[f'tx{n}bias'] = int(p)
+
+        tx_power = self.get_tx_power()
+        if tx_power is not None:
+            for n, p in enumerate(tx_power, 1):
+                status[f'tx{n}power'] = int(p)
+
+        rx_power = self.get_rx_power()
+        if rx_power is not None:
+            for n, p in enumerate(rx_power, 1):
+                status[f'rx{n}power'] = int(p)
+
+        return status
 
     def get_change_event(self, timeout=0):
         return Sfp.get_transceiver_change_event(timeout)
+
+    def is_replaceable(self):
+        """
+        Indicate whether this device is replaceable.
+        Returns:
+            bool: True if it is replaceable.
+        """
+        return True
+
+    def get_name(self):
+        """
+        Retrieves the name of the device
+            Returns:
+            string: The name of the device
+        """
+        return "sfp{}".format(self.index)
+
+    def get_model(self):
+        """
+        Retrieves the model number (or part number) of the device
+        Returns:
+            string: Model/part number of device
+        """
+        info = self.get_transceiver_info()
+        return info.get("model", "N/A")
+
+    def get_serial(self):
+        """
+        Retrieves the serial number of the device
+        Returns:
+            string: Serial number of device
+        """
+        info = self.get_transceiver_info()
+        return info.get("serial", "N/A")
+
+    def get_error_description(self):
+        if not self.get_presence():
+            return self.SFP_STATUS_UNPLUGGED
+        return self.SFP_STATUS_OK
+
+    def get_revision(self):
+        info = self.get_transceiver_info()
+        return info.get("hardware_rev", "N/A")
+
+    def get_status(self):
+        return self.get_presence() and bool(self.get_transceiver_bulk_status())
+
+    def get_position_in_parent(self):
+        return self.index
+
+    def get_tx_disable(self):
+        """
+        Retrieves the tx_disable status of this SFP
+        Returns:
+            A Boolean, True if tx_disable is enabled, False if disabled
+        """
+        tx_disable_list = []
+        with Sfp.sfputil.eeprom_action() as u:
+            if self.sfp_type == QSFP_TYPE:
+                tx_disable_list.append(u.get_tx_disable_channel(self.port_num, 0))
+                tx_disable_list.append(u.get_tx_disable_channel(self.port_num, 1))
+                tx_disable_list.append(u.get_tx_disable_channel(self.port_num, 2))
+                tx_disable_list.append(u.get_tx_disable_channel(self.port_num, 3))
+                return tx_disable_list
+        return None
+
+    def get_tx_disable_channel(self):
+        """
+        Retrieves the TX disabled channels in this SFP
+        Returns:
+            A hex of 4 bits (bit 0 to bit 3 as channel 0 to channel 3) to represent
+            TX channels which have been disabled in this SFP.
+            As an example, a returned value of 0x5 indicates that channel 0
+            and channel 2 have been disabled.
+        """
+        if self.sfp_type == QSFP_TYPE:
+            tx_disable_list = self.get_tx_disable()
+            if tx_disable_list is None:
+                return 0
+            tx_disabled = 0
+            for i in range(len(tx_disable_list)):
+                if tx_disable_list[i]:
+                    tx_disabled |= 1 << i
+            return tx_disabled
+        return None
+
+    def tx_disable(self, tx_disable):
+        """
+        Disable SFP TX for all channels
+        Args:
+            tx_disable : A Boolean, True to enable tx_disable mode, False to disable
+                         tx_disable mode.
+        Returns:
+            A boolean, True if tx_disable is set successfully, False if not
+        """
+        if self.sfp_type == QSFP_TYPE:
+            return self.tx_disable_channel(0xF, tx_disable)
+        return False
+
+    def tx_disable_channel(self, channel, disable):
+        """
+        Sets the tx_disable for specified SFP channels
+        Args:
+            channel : A hex of 4 bits (bit 0 to bit 3) which represent channel 0 to 3,
+                      e.g. 0x5 for channel 0 and channel 2.
+            disable : A boolean, True to disable TX channels specified in channel,
+                      False to enable
+        Returns:
+            A boolean, True if successful, False if not
+        """
+        with Sfp.sfputil.eeprom_action() as u:
+            if self.sfp_type == QSFP_TYPE:
+                return u.tx_disable_channel(self.port_num, channel, disable)
+        return False
+
+    def get_rx_los(self):
+        def get_qsfp_rx_los(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_rx_los_get(self.index)
+        err, rx_los = pltfm_mgr_try(get_qsfp_rx_los)
+        return rx_los
+
+    def get_tx_los(self):
+        def get_qsfp_tx_los(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_los_get(self.index)
+        err, tx_los = pltfm_mgr_try(get_qsfp_tx_los)
+        return tx_los
+
+    def get_tx_fault(self):
+        def get_qsfp_tx_fault(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_fault_get(self.index)
+        err, tx_fault = pltfm_mgr_try(get_qsfp_tx_fault)
+        return tx_fault
+
+    def get_tx_bias(self):
+        def get_qsfp_tx_bias(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_bias_get(self.index)
+        err, tx_bias_A = pltfm_mgr_try(get_qsfp_tx_bias)
+        if err:
+            return None
+        tx_bias_mA = [1000 * b for b in tx_bias_A]
+        return tx_bias_mA
+
+    def get_rx_power(self):
+        def get_qsfp_rx_power(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_rx_pwr_get(self.index)
+        err, rx_W = pltfm_mgr_try(get_qsfp_rx_power)
+        if err:
+            return None
+        rx_mW = [1000 * p for p in rx_W]
+        return rx_mW
+
+    def get_tx_power(self):
+        def get_qsfp_tx_power(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_pwr_get(self.index)
+        err, tx_W = pltfm_mgr_try(get_qsfp_tx_power)
+        if err:
+            return None
+        tx_mW = [1000 * p for p in tx_W]
+        return tx_mW
+
+    def get_temperature(self):
+        def get_qsfp_temp(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_temperature_get(self.index)
+        err, temp_C = pltfm_mgr_try(get_qsfp_temp)
+        return temp_C
+
+    def get_voltage(self):
+        def get_qsfp_voltage(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_voltage_get(self.index)
+        err, voltage_V = pltfm_mgr_try(get_qsfp_voltage)
+        if err:
+            return None
+        voltage_mV = voltage_V * 1000
+        return voltage_mV
+
+    def get_transceiver_threshold_info(self):
+        def qsfp_thres_info(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_thresholds_get(self.index)
+
+        err, pltfm_info = pltfm_mgr_try(qsfp_thres_info)
+        if err:
+            return None
+
+        info = dict()
+
+        info['rxpowerhighalarm'] = pltfm_info.rx_pwr.highalarm
+        info['rxpowerhighwarning'] = pltfm_info.rx_pwr.lowalarm
+        info['rxpowerlowalarm'] = pltfm_info.rx_pwr.highwarning
+        info['rxpowerlowwarning'] = pltfm_info.rx_pwr.lowwarning
+        info['temphighalarm'] = pltfm_info.temp.highalarm
+        info['temphighwarning'] = pltfm_info.temp.lowalarm
+        info['templowalarm'] = pltfm_info.temp.highwarning
+        info['templowwarning'] = pltfm_info.temp.lowwarning
+        info['txbiashighalarm'] = pltfm_info.tx_bias.highalarm
+        info['txbiashighwarning'] = pltfm_info.tx_bias.lowalarm
+        info['txbiaslowalarm'] = pltfm_info.tx_bias.highwarning
+        info['txbiaslowwarning'] = pltfm_info.tx_bias.lowwarning
+        info['txpowerhighalarm'] = pltfm_info.tx_pwr.highalarm
+        info['txpowerhighwarning'] = pltfm_info.tx_pwr.lowalarm
+        info['txpowerlowalarm'] = pltfm_info.tx_pwr.highwarning
+        info['txpowerlowwarning'] = pltfm_info.tx_pwr.lowwarning
+        info['vcchighalarm'] = pltfm_info.vcc.highalarm
+        info['vcchighwarning'] = pltfm_info.vcc.lowalarm
+        info['vcclowalarm'] = pltfm_info.vcc.highwarning
+        info['vcclowwarning'] = pltfm_info.vcc.lowwarning
+
+        return info
 
 def sfp_list_get():
     sfp_list = []
