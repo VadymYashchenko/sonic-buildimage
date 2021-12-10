@@ -83,7 +83,7 @@ class Thermal(ThermalBase):
     # ThermalBase interface methods:
     def get_temperature(self) -> float:
         temp = self.__get('temp', 'input')
-        self.__collect_temp.append(temp)
+        self.__collect_temp.append(float(temp))
         self.__collect_temp.sort()
         return float(temp)
 
@@ -130,6 +130,12 @@ class Thermal(ThermalBase):
 
     def get_position_in_parent(self):
         return self.__index
+
+    def set_high_threshold(self, temperature):
+        return False
+
+    def set_low_threshold(self, temperature):
+        return False
 
 def thermal_list_get():
     l = []
