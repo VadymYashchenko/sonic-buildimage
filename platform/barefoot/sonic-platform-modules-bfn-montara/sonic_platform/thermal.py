@@ -96,22 +96,6 @@ class Thermal(ThermalBase):
     def get_low_critical_threshold(self) -> float:
         return float(self.__get('temp', 'alarm'))
 
-    def get_low_threshold(self) -> float:
-        return float(self.__get('temp', 'min'))
-
-    def get_serial(self):
-        return 'N/A'
-
-    def get_minimum_recorded(self) -> float:
-        temp = self.__collect_temp[0] if len(self.__collect_temp) > 0 else 0.1
-        temp = temp if temp > 0.0 else 0.1
-        return float(temp)
-
-    def get_maximum_recorded(self) -> float:
-        temp = self.__collect_temp[-1] if len(self.__collect_temp) > 0 else 100.0
-        temp = temp if temp <= 100.0 else 100.0
-        return float(temp)
-
     def get_model(self):
         return f"{self.__label}".lower()
 
@@ -127,6 +111,22 @@ class Thermal(ThermalBase):
 
     def is_replaceable(self):
         return False
+
+    def get_low_threshold(self) -> float:
+        return float(self.__get('temp', 'min'))
+
+    def get_serial(self):
+        return 'N/A'
+
+    def get_minimum_recorded(self) -> float:
+        temp = self.__collect_temp[0] if len(self.__collect_temp) > 0 else 0.1
+        temp = temp if temp > 0.0 else 0.1
+        return float(temp)
+
+    def get_maximum_recorded(self) -> float:
+        temp = self.__collect_temp[-1] if len(self.__collect_temp) > 0 else 100.0
+        temp = temp if temp <= 100.0 else 100.0
+        return float(temp)
 
     def get_position_in_parent(self):
         return self.__index
