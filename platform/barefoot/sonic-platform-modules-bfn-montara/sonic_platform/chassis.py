@@ -2,6 +2,8 @@
 
 try:
     import sys
+    from threading import Timer
+    from time import sleep
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp, sfp_list_get
     from sonic_platform.psu import psu_list_get
@@ -10,6 +12,30 @@ try:
     from eeprom import Eeprom
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
+
+class ThermalManager():
+    def __init__(self, polling_time):
+        self.__polling_thermal_time = polling_time
+        self.__sleep_time = polling_time + 0.1
+        self.__thermals = thermal_list_get()
+        self.__sensors = []
+
+    def start(self):
+        timer = Timer(self.__polling_thermal_time, self.work)
+        timer.start()
+        sleep(self.__sleep_time)
+
+    def work(self):
+        for term in self.__thermals:
+            self.check(term)
+
+    def check(self, sensor):
+        temperature = sensor.get_temperature()
+        if temperature is not None:
+            if temperature > sensor.get_high_threshold():
+                print('Sensor ', sensor.get_name(), ' temperature more then', sensor.get_high_threshold())
+            elif temperature < sensor.get_low_threshold():
+                print('Sensor ', sensor.get_name(), ' temperature less then', sensor.get_higet_low_thresholdgh_threshold())
 
 class Chassis(ChassisBase):
     """
@@ -23,6 +49,8 @@ class Chassis(ChassisBase):
         self.__thermals = None
         self.__psu_list = None
         self.__sfp_list = None
+        self.__thermal_mngr = None
+        self.__polling_thermal_time = 30
 
     @property
     def _eeprom(self):
@@ -73,6 +101,16 @@ class Chassis(ChassisBase):
     @_sfp_list.setter
     def _sfp_list(self, value):
         pass
+
+    @property
+    def _thermal_mngr(self):
+        if self.__thermal_mngr is None:
+            self.__thermal_mngr = ThermalManager(self.__polling_thermal_time)
+        return self.__thermal_mngr
+
+    @_thermal_mngr.setter
+    def _thermal_mngr(self, value):
+        self.__thermal_mngr = ThermalManager(value)
 
     def get_name(self):
         """
