@@ -16,7 +16,7 @@ class ThermalManager():
     def __init__(self, polling_time = 30.0):
         self.__polling_thermal_time = polling_time
         self.__thermals = None
-        self.__timer = Timer(self.__polling_thermal_time, self.start)
+        self.start()
 
     def start(self):
         self.work()
@@ -31,17 +31,25 @@ class ThermalManager():
     def check(self, sensor):
         temperature = sensor.get_temperature()
         if temperature is not None:
-            if temperature > sensor.get_high_threshold():
-                print('Sensor ', sensor.get_name(), ' temperature more then', sensor.get_high_threshold())
-            elif temperature < sensor.get_low_threshold():
-                print('Sensor ', sensor.get_name(), ' temperature less then', sensor.get_higet_low_thresholdgh_threshold())
-        # debug_steps
-        name = sensor.get_name()
-        if name is not None:
-            print('Debug sensor :', name)
+            temp_high = sensor.get_high_threshold()
+            temp_low = sensor.get_low_threshold()
+            if temp_high > -999.0:
+                if temperature > temp_high:
+                    print('Sensor ', sensor.get_name(), ' temperature more then', temp_high, '!!!')
+            else:
+                print('Sensor ', sensor.get_name(), ' has no high temperature threshold')
+
+            if temp_low > -999.0:
+                if temperature < temp_low:
+                    print('Sensor ', sensor.get_name(), ' temperature less then', temp_low, '!!!')
+            else:
+                print('Sensor ', sensor.get_name(), ' has no low temperature threshold')
+            
+    def stop(self):
+        self.__timer.cancel()
 
     def __del__(self):
-        self.__timer.cancel()
+        self.stop()
 
 class Chassis(ChassisBase):
     """
