@@ -3,7 +3,6 @@
 try:
     import sys
     from threading import Timer
-    from time import sleep
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp, sfp_list_get
     from sonic_platform.psu import psu_list_get
@@ -14,17 +13,18 @@ except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
 class ThermalManager():
-    def __init__(self, polling_time):
+    def __init__(self, polling_time = 30.0):
         self.__polling_thermal_time = polling_time
-        self.__sleep_time = polling_time + 0.1
-        self.__thermals = thermal_list_get()
+        self.__thermals = None
+        self.__timer = Timer(self.__polling_thermal_time, self.start)
 
     def start(self):
-        timer = Timer(self.__polling_thermal_time, self.work)
-        timer.start()
-        sleep(self.__sleep_time)
+        self.work()
+        self.__timer = Timer(self.__polling_thermal_time, self.start)
+        self.__timer.start()
 
     def work(self):
+        self.__thermals = thermal_list_get()
         for term in self.__thermals:
             self.check(term)
 
@@ -39,6 +39,9 @@ class ThermalManager():
         name = sensor.get_name()
         if name is not None:
             print('Debug sensor :', name)
+
+    def __del__(self):
+        self.__timer.cancel()
 
 class Chassis(ChassisBase):
     """
