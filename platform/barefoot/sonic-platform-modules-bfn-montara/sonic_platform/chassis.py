@@ -18,7 +18,6 @@ class ThermalManager():
         self.__polling_thermal_time = polling_time
         self.__sleep_time = polling_time + 0.1
         self.__thermals = thermal_list_get()
-        self.__sensors = []
 
     def start(self):
         timer = Timer(self.__polling_thermal_time, self.work)
@@ -36,6 +35,10 @@ class ThermalManager():
                 print('Sensor ', sensor.get_name(), ' temperature more then', sensor.get_high_threshold())
             elif temperature < sensor.get_low_threshold():
                 print('Sensor ', sensor.get_name(), ' temperature less then', sensor.get_higet_low_thresholdgh_threshold())
+        # debug_steps
+        name = sensor.get_name()
+        if name is not None:
+            print('Debug sensor :', name)
 
 class Chassis(ChassisBase):
     """
@@ -212,3 +215,7 @@ class Chassis(ChassisBase):
             to pass a description of the reboot cause.
         """
         return self.REBOOT_CAUSE_NON_HARDWARE, ''
+
+    def get_thermal_manager(self):
+
+        return self._thermal_mngr
