@@ -34,6 +34,7 @@ from sonic_platform.led import Led
 from sonic_platform.psu import FixedPsu, Psu
 
 class TestLed:
+    @mock.patch('sonic_platform.led.Led._wait_files_ready', mock.MagicMock(return_value=True))
     def test_chassis_led(self):
         chassis = Chassis()
         assert chassis._led is None
@@ -62,7 +63,9 @@ class TestLed:
         assert obj.set_status_led(Led.STATUS_LED_COLOR_GREEN) is True
         assert obj.get_status_led() == Led.STATUS_LED_COLOR_GREEN
         mock_file_content[physical_led.get_green_led_path()] = Led.LED_OFF
-        assert obj.set_status_led(Led.STATUS_LED_COLOR_ORANGE) is False
+        assert obj.set_status_led(Led.STATUS_LED_COLOR_ORANGE) is True
+        assert obj.get_status_led() == Led.STATUS_LED_COLOR_RED
+        mock_file_content[physical_led.get_orange_led_path()] = Led.LED_OFF
 
         assert obj.set_status_led(Led.STATUS_LED_COLOR_RED_BLINK)
         assert obj.get_status_led() == Led.STATUS_LED_COLOR_RED_BLINK
@@ -85,7 +88,7 @@ class TestLed:
             led.get_green_led_path(): Led.LED_ON,
             led.get_red_led_path(): Led.LED_OFF,
             led.get_orange_led_path(): Led.LED_OFF,
-            led.get_led_cap_path(): 'none green green_blink red red_blink',
+            led.get_led_cap_path(): 'none green green_blink red red_blink orange',
             led.get_green_led_delay_off_path(): Led.LED_OFF,
             led.get_green_led_delay_on_path(): Led.LED_OFF,
             led.get_red_led_delay_off_path(): Led.LED_OFF,
@@ -94,6 +97,7 @@ class TestLed:
             led.get_orange_led_delay_on_path(): Led.LED_OFF,
         }
 
+    @mock.patch('sonic_platform.led.Led._wait_files_ready', mock.MagicMock(return_value=True))
     def test_fan_led(self):
         fan_drawer = RealDrawer(0)
         self._verify_fan_led(fan_drawer)
@@ -133,12 +137,14 @@ class TestLed:
         assert obj1.get_status_led() == Led.STATUS_LED_COLOR_GREEN
         assert obj1.get_status_led() == Led.STATUS_LED_COLOR_GREEN
 
+    @mock.patch('sonic_platform.led.Led._wait_files_ready', mock.MagicMock(return_value=True))
     def test_psu_led(self):
         psu1 = Psu(0)
         psu2 = Psu(1)
         physical_led = Psu.get_shared_led()._led
         self._verify_shared_led(physical_led, psu1, psu2)
 
+    @mock.patch('sonic_platform.led.Led._wait_files_ready', mock.MagicMock(return_value=True))
     def test_fixed_psu_led(self):
         psu = FixedPsu(0)
         physical_led = psu.led

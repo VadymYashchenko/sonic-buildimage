@@ -27,12 +27,12 @@ SRC_PATH = src
 RULES_PATH = rules
 TARGET_PATH = target
 DOCKERS_PATH = dockers
-BLDENV = $(shell lsb_release -cs)
+BLDENV := $(shell lsb_release -cs)
 DEBS_PATH = $(TARGET_PATH)/debs/$(BLDENV)
 FILES_PATH = $(TARGET_PATH)/files/$(BLDENV)
-PYTHON_DEBS_PATH = $(TARGET_PATH)/python-debs
-PYTHON_WHEELS_PATH = $(TARGET_PATH)/python-wheels
-PROJECT_ROOT = $(shell pwd)
+PYTHON_DEBS_PATH = $(TARGET_PATH)/python-debs/$(BLDENV)
+PYTHON_WHEELS_PATH = $(TARGET_PATH)/python-wheels/$(BLDENV)
+PROJECT_ROOT := $(shell pwd)
 JESSIE_DEBS_PATH = $(TARGET_PATH)/debs/jessie
 JESSIE_FILES_PATH = $(TARGET_PATH)/files/jessie
 STRETCH_DEBS_PATH = $(TARGET_PATH)/debs/stretch
@@ -159,6 +159,19 @@ ifeq ($(SONIC_INCLUDE_NAT),y)
 INCLUDE_NAT = y
 endif
 
+ifeq ($(SONIC_INCLUDE_P4RT),y)
+INCLUDE_P4RT = y
+endif
+
+# Pre-built Bazel is not available for armhf, so exclude P4RT
+# TODO(PINS): Remove when Bazel binaries are available for armhf
+ifeq ($(CONFIGURED_ARCH),armhf)
+	ifeq ($(INCLUDE_P4RT),y)
+		@echo "Disabling P4RT due to incompatible CPU architecture: $(CONFIGURED_ARCH)"
+	endif
+	override INCLUDE_P4RT = n
+endif
+
 ifeq ($(SONIC_INCLUDE_MACSEC),y)
 INCLUDE_MACSEC = y
 endif
@@ -230,7 +243,7 @@ MAKEFLAGS += -j $(SONIC_BUILD_JOBS)
 export SONIC_CONFIG_MAKE_JOBS
 
 ifeq ($(CONFIGURED_PLATFORM),vs)
-export BUILD_MULTIASIC_KVM=$(BUILD_MULTIASIC_KVM)
+export BUILD_MULTIASIC_KVM
 endif
 
 ###############################################################################
@@ -290,6 +303,7 @@ $(info "INCLUDE_RESTAPI"                 : "$(INCLUDE_RESTAPI)")
 $(info "INCLUDE_SFLOW"                   : "$(INCLUDE_SFLOW)")
 $(info "INCLUDE_NAT"                     : "$(INCLUDE_NAT)")
 $(info "INCLUDE_DHCP_RELAY"              : "$(INCLUDE_DHCP_RELAY)")
+$(info "INCLUDE_P4RT"                    : "$(INCLUDE_P4RT)")
 $(info "INCLUDE_KUBERNETES"              : "$(INCLUDE_KUBERNETES)")
 $(info "INCLUDE_MACSEC"                  : "$(INCLUDE_MACSEC)")
 $(info "INCLUDE_MUX"                     : "$(INCLUDE_MUX)")
@@ -949,7 +963,8 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
                 $(SONIC_UTILITIES_DATA) \
                 $(SONIC_HOST_SERVICES_DATA) \
                 $(BASH) \
-                $(BASH_TACPLUS)) \
+                $(BASH_TACPLUS) \
+                $(AUDISP_TACPLUS)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_DOCKERS)) \
         $$(addprefix $(TARGET_PATH)/,$$(SONIC_PACKAGES_LOCAL)) \
         $$(addprefix $(FILES_PATH)/,$$($$*_FILES)) \
@@ -963,6 +978,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SONIC_PLATFORM_COMMON_PY3)) \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(REDIS_DUMP_LOAD_PY2)) \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SONIC_PLATFORM_API_PY2)) \
+        $(addprefix $(PYTHON_WHEELS_PATH)/,$(SONIC_PLATFORM_API_PY3)) \
         $(if $(findstring y,$(PDDF_SUPPORT)),$(addprefix $(PYTHON_WHEELS_PATH)/,$(PDDF_PLATFORM_API_BASE_PY2))) \
         $(if $(findstring y,$(PDDF_SUPPORT)),$(addprefix $(PYTHON_WHEELS_PATH)/,$(PDDF_PLATFORM_API_BASE_PY3))) \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SONIC_YANG_MODELS_PY3)) \
@@ -991,6 +1007,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 	export include_system_telemetry="$(INCLUDE_SYSTEM_TELEMETRY)"
 	export include_restapi="$(INCLUDE_RESTAPI)"
 	export include_nat="$(INCLUDE_NAT)"
+	export include_p4rt="$(INCLUDE_P4RT)"
 	export include_sflow="$(INCLUDE_SFLOW)"
 	export enable_auto_tech_support="$(ENABLE_AUTO_TECH_SUPPORT)"
 	export include_macsec="$(INCLUDE_MACSEC)"
@@ -1007,10 +1024,10 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 	export lazy_installer_debs="$(foreach deb, $($*_LAZY_INSTALLS),$(foreach device, $($(deb)_PLATFORM),$(addprefix $(device)@, $(IMAGE_DISTRO_DEBS_PATH)/$(deb))))"
 	export lazy_build_installer_debs="$(foreach deb, $($*_LAZY_BUILD_INSTALLS), $(addprefix $($(deb)_MACHINE)|,$(deb)))"
 	export installer_images="$(foreach docker, $($*_DOCKERS),\
-				$(addprefix $($(docker)_PACKAGE_NAME)|,\
-				$(addprefix $($(docker)_PATH)|,\
-				$(addprefix $($(docker)_MACHINE)|,\
-				$(addprefix $(TARGET_PATH)/,$(addsuffix :$($(docker)_VERSION),$(docker)))))))"
+				$(addprefix $($(docker:-dbg.gz=.gz)_PACKAGE_NAME)|,\
+				$(addprefix $($(docker:-dbg.gz=.gz)_PATH)|,\
+				$(addprefix $($(docker:-dbg.gz=.gz)_MACHINE)|,\
+				$(addprefix $(TARGET_PATH)/,$(addsuffix :$($(docker:-dbg.gz=.gz)_VERSION),$(docker)))))))"
 	export sonic_packages="$(foreach package, $(SONIC_PACKAGES),\
 				$(addsuffix |$($(package)_DEFAULT_FEATURE_STATE_ENABLED),\
 				$(addsuffix |$($(package)_DEFAULT_FEATURE_OWNER),\
