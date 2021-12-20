@@ -228,5 +228,7 @@ class Chassis(ChassisBase):
         return self.REBOOT_CAUSE_NON_HARDWARE, ''
 
     def get_thermal_manager(self):
-
         return self._thermal_mngr
+
+    def __del__(self):
+        self.__thermal_mngr.stop()
