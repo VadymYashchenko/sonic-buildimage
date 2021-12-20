@@ -16,6 +16,7 @@ class ThermalManager():
     def __init__(self, polling_time = 30.0):
         self.__polling_thermal_time = polling_time
         self.__thermals = None
+        self.__timer = None
         self.start()
 
     def start(self):
@@ -48,8 +49,9 @@ class ThermalManager():
     def stop(self):
         self.__timer.cancel()
 
-    def __del__(self):
-        self.stop()
+    def stop(self):
+        if self.__timer is not None:
+            self.__timer.cancel()
 
 class Chassis(ChassisBase):
     """
@@ -297,4 +299,5 @@ class Chassis(ChassisBase):
         return self._thermal_mngr
 
     def __del__(self):
-        self.__thermal_mngr.stop()
+        if self.__thermal_mngr is not None:
+            self.__thermal_mngr.stop()
