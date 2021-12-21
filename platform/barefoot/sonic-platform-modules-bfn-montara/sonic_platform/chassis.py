@@ -17,7 +17,8 @@ class ThermalManager():
         self.__polling_thermal_time = polling_time
         self.__thermals = None
         self.__timer = None
-        self.start()
+        self.__chassis = None
+        
 
     def start(self):
         self.work()
@@ -25,7 +26,7 @@ class ThermalManager():
         self.__timer.start()
 
     def work(self):
-        self.__thermals = thermal_list_get()
+        self.__thermals = self.__chassis._thermal_list
         for term in self.__thermals:
             self.check(term)
 
@@ -47,11 +48,32 @@ class ThermalManager():
                 print('Sensor ', sensor.get_name(), ' has no low temperature threshold')
             
     def stop(self):
-        self.__timer.cancel()
-
-    def stop(self):
         if self.__timer is not None:
             self.__timer.cancel()
+
+    def __del__(self):
+        if self.__timer is not None:
+            self.__timer.cancel()
+
+    # for compatibility with old version
+    def run_policy(self, chassis_def):
+        self.__chassis = chassis_def
+
+    def get_interval(self):
+        return self.__polling_thermal_time
+
+    def initialize(self):
+        pass
+
+    def load(self, json_file):
+        pass
+
+    def init_thermal_algorithm(self, chassis_def):
+        self.start()
+
+    def deinitialize(self):
+        self.stop()
+        del self
 
 class Chassis(ChassisBase):
     """
