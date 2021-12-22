@@ -16,9 +16,10 @@ class ThermalManager():
         self.__timer.start()
 
     def work(self):
-        self.__thermals = self.__chassis._thermal_list
-        for term in self.__thermals:
-            self.check(term)
+        if self.__chassis is not None:
+            self.__thermals = self.__chassis._thermal_list
+            for term in self.__thermals:
+                self.check(term)
 
     def check(self, sensor):
         temperature = sensor.get_temperature()
