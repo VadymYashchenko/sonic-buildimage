@@ -78,7 +78,13 @@ class Thermal(ThermalBase):
     def __get(self, attr_prefix, attr_suffix):
         sensor_data = _sensors_get().get(self.__chip, {}).get(self.__label, {})
         value = _value_get(sensor_data, attr_prefix, attr_suffix)
-        return value if value is not None else -999.9
+        if value is not None:
+            return value
+        elif attr_prefix == 'temp':
+            if attr_suffix == 'max' or attr_suffix == 'crit':
+                return 999.9
+            elif attr_suffix == 'min' or attr_suffix == 'alarm':
+                return -999.9
 
     # ThermalBase interface methods:
     def get_temperature(self) -> float:

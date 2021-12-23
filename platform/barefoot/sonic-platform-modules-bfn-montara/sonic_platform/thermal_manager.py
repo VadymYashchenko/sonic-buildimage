@@ -26,7 +26,7 @@ class ThermalManager():
         if temperature is not None:
             temp_high = sensor.get_high_threshold()
             temp_low = sensor.get_low_threshold()
-            if temp_high > -999.0:
+            if temp_high < 999.0:
                 if temperature > temp_high:
                     print('Sensor ', sensor.get_name(), ' temperature more then', temp_high, '!!!')
             else:
