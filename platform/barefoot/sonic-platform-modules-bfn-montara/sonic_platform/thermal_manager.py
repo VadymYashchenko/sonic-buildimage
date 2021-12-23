@@ -43,8 +43,7 @@ class ThermalManager():
             self.__timer.cancel()
 
     def __del__(self):
-        if self.__timer is not None:
-            self.__timer.cancel()
+        self.stop()
 
     # for compatibility with old version
     def run_policy(self, chassis_def):
@@ -65,5 +64,4 @@ class ThermalManager():
 
     def deinitialize(self):
         self.stop()
-        del self
     
