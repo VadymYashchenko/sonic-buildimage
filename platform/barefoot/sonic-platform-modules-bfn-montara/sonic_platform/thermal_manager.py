@@ -9,11 +9,13 @@ class ThermalManager():
         self.__thermals = None
         self.__timer = None
         self.__chassis = None
+        self.__running = False
         
     def start(self):
-        self.work()
-        self.__timer = Timer(self.__polling_thermal_time, self.start)
-        self.__timer.start()
+        if self.__running == True:
+            self.work()
+            self.__timer = Timer(self.__polling_thermal_time, self.start)
+            self.__timer.start()
 
     def work(self):
         if self.__chassis is not None:
@@ -26,20 +28,14 @@ class ThermalManager():
         if temperature is not None:
             temp_high = sensor.get_high_threshold()
             temp_low = sensor.get_low_threshold()
-            if temp_high < 999.0:
-                if temperature > temp_high:
-                    print('Sensor ', sensor.get_name(), ' temperature more then', temp_high, '!!!')
-            else:
-                print('Sensor ', sensor.get_name(), ' has no high temperature threshold')
-
-            if temp_low > -999.0:
-                if temperature < temp_low:
-                    print('Sensor ', sensor.get_name(), ' temperature less then', temp_low, '!!!')
-            else:
-                print('Sensor ', sensor.get_name(), ' has no low temperature threshold')
+            if temperature > temp_high:
+                print('Sensor ', sensor.get_name(), ' temperature more then', temp_high, '!!!')
+            if temperature < temp_low:
+                print('Sensor ', sensor.get_name(), ' temperature less then', temp_low, '!!!')
             
     def stop(self):
         if self.__timer is not None:
+            self.__running = False
             self.__timer.cancel()
 
     def __del__(self):
@@ -60,6 +56,7 @@ class ThermalManager():
 
     def init_thermal_algorithm(self, chassis_def):
         self.__chassis = chassis_def
+        self.__running = True
         self.start()
 
     def deinitialize(self):

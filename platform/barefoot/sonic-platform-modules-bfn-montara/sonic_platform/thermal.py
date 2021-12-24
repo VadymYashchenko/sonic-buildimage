@@ -1,6 +1,6 @@
 try:
     import subprocess
-
+    from collections import namedtuple
     from bfn_extensions.platform_sensors import platform_sensors_get
     from sonic_platform_base.thermal_base import ThermalBase
 except ImportError as e:
@@ -18,6 +18,9 @@ Core 0:
   temp2_input: 37.000
   ...
 '''
+
+Threshold = namedtuple('Threshold', ['crit', 'max', 'min', 'alarm'], defaults=[0.1]*4)
+
 def _sensors_chip_parsed(data: str):
     def kv(line):
         k, v, *_ = [t.strip(': ') for t in line.split(':') if t] + ['']
@@ -68,6 +71,25 @@ def _value_get(d: dict, key_prefix, key_suffix=''):
 
 # Thermal -> ThermalBase -> DeviceBase
 class Thermal(ThermalBase):
+    _thresholds = {
+            "com_e_driver-i2c-4-33:memory-temp": Threshold(85.0, 80.75, 0.2, 0.1),
+            "com_e_driver-i2c-4-33:cpu-temp":    Threshold(99.9, 99.75, 0.2, 0.1),
+            "psu_driver-i2c-7-5a:psu1-temp1":    Threshold(50.0, 47.5, 0.2, 0.1),
+            "psu_driver-i2c-7-5a:psu1-temp2":    Threshold(90.0, 85.5, 0.2, 0.1),
+            "psu_driver-i2c-7-5a:psu1-temp3":    Threshold(50.0, 47.5, 0.2, 0.1),
+            "tmp75-i2c-3-48:chip-temp":          Threshold(90.0, 85.5, 0.2, 0.1),
+            "tmp75-i2c-3-49:exhaust2-temp":      Threshold(80.0, 76.0, 0.2, 0.1),
+            "tmp75-i2c-3-4a:exhaust-temp":       Threshold(60.0, 57.0, 0.2, 0.1),
+            "tmp75-i2c-3-4b:intake-temp":        Threshold(60.0, 57.0, 0.2, 0.1),
+            "tmp75-i2c-3-4c:tofino-temp":        Threshold(99.9, 99.75, 0.2, 0.1),
+            "tmp75-i2c-3-4d:intake2-temp":       Threshold(60.0, 57.0, 0.2, 0.1),
+            "coretemp-isa-0000:package-id-0":    Threshold(80.0, 76.0, 0.2, 0.1),
+            "coretemp-isa-0000:core-0": 	     Threshold(99.9, 82.0, 0.2, 0.1),
+            "coretemp-isa-0000:core-1":          Threshold(99.9, 82.0, 0.2, 0.1),
+            "coretemp-isa-0000:core-2":          Threshold(99.9, 82.0, 0.2, 0.1),
+            "coretemp-isa-0000:core-3":          Threshold(99.9, 82.0, 0.2, 0.1),
+    }
+
     def __init__(self, chip, label, index = 0):
         self.__chip = chip
         self.__label = label
@@ -81,10 +103,16 @@ class Thermal(ThermalBase):
         if value is not None:
             return value
         elif attr_prefix == 'temp':
-            if attr_suffix == 'max' or attr_suffix == 'crit':
-                return 999.9
-            elif attr_suffix == 'min' or attr_suffix == 'alarm':
-                return -999.9
+            if attr_suffix == 'crit':
+                return self._thresholds[self.__name].crit
+            elif attr_suffix == 'max':
+                return self._thresholds[self.__name].max
+            elif attr_suffix == 'min':
+                return self._thresholds[self.__name].min
+            elif attr_suffix == 'alarm':
+                return self._thresholds[self.__name].alarm
+            else:
+                return 1.0
 
     # ThermalBase interface methods:
     def get_temperature(self) -> float:
