@@ -44,6 +44,16 @@
             }
         }
     },
+    "DEVICE_METADATA_TYPE_CORRECT_PATTERN": {
+        "sonic-device_metadata:sonic-device_metadata": {
+            "sonic-device_metadata:DEVICE_METADATA": {
+                "sonic-device_metadata:localhost": {
+                    "bgp_asn": "65002",
+                    "type": "BackEndToRRouter"
+                }
+            }
+        }
+    },
     "DEVICE_METADATA_DEFAULT_SYNCHRONOUS_MODE": {
         "sonic-device_metadata:sonic-device_metadata": {
             "sonic-device_metadata:DEVICE_METADATA": {
@@ -136,6 +146,16 @@
                     "frr_mgmt_framework_config": true,
                     "hostname": "DUT-CSW",
                     "platform": "Stone-DX010"
+                }
+            }
+        }
+    },
+    "DEVICE_METADATA_CORRECT_CLOUDTYPE_REGION_CONFIG": {
+        "sonic-device_metadata:sonic-device_metadata": {
+            "sonic-device_metadata:DEVICE_METADATA": {
+                "sonic-device_metadata:localhost": {
+                    "cloudtype": "Public",
+                    "region": "usfoo"
                 }
             }
         }

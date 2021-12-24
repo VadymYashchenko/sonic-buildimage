@@ -17,7 +17,7 @@ try:
     from sonic_platform.module import Module
     from sonic_platform.thermal import Thermal
     from sonic_platform.component import Component
-    from sonic_platform.watchdog import Watchdog
+    from sonic_platform.watchdog import Watchdog, WatchdogTCO
     from sonic_platform.eeprom import Eeprom
     import time
 except ImportError as e:
@@ -27,7 +27,7 @@ MAX_S6100_MODULE = 4
 MAX_S6100_FANTRAY = 4
 MAX_S6100_PSU = 2
 MAX_S6100_THERMAL = 10
-MAX_S6100_COMPONENT = 3
+MAX_S6100_COMPONENT = 4
 
 
 class Chassis(ChassisBase):
@@ -93,7 +93,13 @@ class Chassis(ChassisBase):
             component = Component(i)
             self._component_list.append(component)
 
-        self._watchdog = Watchdog()
+        bios_ver = self.get_component(0).get_firmware_version()
+        bios_minor_ver = bios_ver.split("-")[-1]
+        if bios_minor_ver.isdigit() and (int(bios_minor_ver) >= 9):
+            self._watchdog = WatchdogTCO()
+        else:
+            self._watchdog = Watchdog()
+
         self._transceiver_presence = self._get_transceiver_presence()
 
     def _get_reboot_reason_smf_register(self):

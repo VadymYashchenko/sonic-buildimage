@@ -8,6 +8,7 @@ try:
     from sonic_platform.fan_drawer import fan_drawer_list_get
     from sonic_platform.thermal import thermal_list_get
     from eeprom import Eeprom
+    from sonic_platform.thermal_manager import ThermalManager
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
@@ -20,9 +21,12 @@ class Chassis(ChassisBase):
 
         self.__eeprom = None
         self.__fan_drawers = None
+        self.__fan_list = None
         self.__thermals = None
         self.__psu_list = None
         self.__sfp_list = None
+        self.__thermal_mngr = None
+        self.__polling_thermal_time = 30
 
     @property
     def _eeprom(self):
@@ -42,6 +46,18 @@ class Chassis(ChassisBase):
 
     @_fan_drawer_list.setter
     def _fan_drawer_list(self, value):
+        pass
+
+    @property
+    def _fan_list(self):
+        if self.__fan_list is None:
+            self.__fan_list = []
+            for fan_drawer in self._fan_drawer_list:
+                self.__fan_list.extend(fan_drawer._fan_list)
+        return self.__fan_list
+
+    @_fan_list.setter
+    def _fan_list(self, value):
         pass
 
     @property
@@ -74,6 +90,16 @@ class Chassis(ChassisBase):
     def _sfp_list(self, value):
         pass
 
+    @property
+    def _thermal_mngr(self):
+        if self.__thermal_mngr is None:
+            self.__thermal_mngr = ThermalManager(self.__polling_thermal_time)
+        return self.__thermal_mngr
+
+    @_thermal_mngr.setter
+    def _thermal_mngr(self, value):
+        self.__thermal_mngr = ThermalManager(value)
+
     def get_name(self):
         """
         Retrieves the name of the chassis
@@ -105,6 +131,14 @@ class Chassis(ChassisBase):
             string: Serial number of chassis
         """
         return self._eeprom.serial_number_str()
+
+    def get_revision(self):
+        """
+        Retrieves the revision number of the chassis (Service tag)
+        Returns:
+            string: Revision number of chassis
+        """
+        return self._eeprom.revision_str()
 
     def get_sfp(self, index):
         """
@@ -174,3 +208,55 @@ class Chassis(ChassisBase):
             to pass a description of the reboot cause.
         """
         return self.REBOOT_CAUSE_NON_HARDWARE, ''
+
+    def get_position_in_parent(self):
+        """
+        Retrieves 1-based relative physical position in parent device. If the agent cannot determine the parent-relative position
+        for some reason, or if the associated value of entPhysicalContainedIn is '0', then the value '-1' is returned
+        Returns:
+            integer: The 1-based relative physical position in parent device or -1 if cannot determine the position
+        """
+        return -1
+
+    def is_replaceable(self):
+        """
+        Indicate whether this device is replaceable.
+        Returns:
+            bool: True if it is replaceable.
+        """
+        return False
+
+    def initizalize_system_led(self):
+        self.system_led = ""
+        return True
+
+    def set_status_led(self, color):
+        """
+        Sets the state of the system LED
+
+        Args:
+            color: A string representing the color with which to set the
+                   system LED
+
+        Returns:
+            bool: True if system LED state is set successfully, False if not
+        """
+        self.system_led = color
+        return True
+
+    def get_status_led(self):
+        """
+        Gets the state of the system LED
+
+        Returns:
+            A string, one of the valid LED color strings which could be vendor
+            specified.
+        """
+        return self.system_led
+
+    def get_thermal_manager(self):
+        return self._thermal_mngr
+
+    def __del__(self):
+        if self.__thermal_mngr is not None:
+            self.__thermal_mngr.stop()
