@@ -84,7 +84,7 @@ class Thermal(ThermalBase):
             "tmp75-i2c-3-4c:tofino-temp":        Threshold(99.9, 99.75, 0.2, 0.1),
             "tmp75-i2c-3-4d:intake2-temp":       Threshold(60.0, 57.0, 0.2, 0.1),
             "coretemp-isa-0000:package-id-0":    Threshold(80.0, 76.0, 0.2, 0.1),
-            "coretemp-isa-0000:core-0": 	     Threshold(99.9, 82.0, 0.2, 0.1),
+            "coretemp-isa-0000:core-0":          Threshold(99.9, 82.0, 0.2, 0.1),
             "coretemp-isa-0000:core-1":          Threshold(99.9, 82.0, 0.2, 0.1),
             "coretemp-isa-0000:core-2":          Threshold(99.9, 82.0, 0.2, 0.1),
             "coretemp-isa-0000:core-3":          Threshold(99.9, 82.0, 0.2, 0.1),
@@ -113,6 +113,8 @@ class Thermal(ThermalBase):
                 return self._thresholds[self.__name].alarm
             else:
                 return 1.0
+        else:
+            return 0.1
 
     # ThermalBase interface methods:
     def get_temperature(self) -> float:
