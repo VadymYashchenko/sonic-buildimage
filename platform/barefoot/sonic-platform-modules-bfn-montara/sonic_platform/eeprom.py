@@ -43,11 +43,6 @@ _product_dict = {
 _EEPROM_SYMLINK = "/var/run/platform/eeprom/syseeprom"
 _EEPROM_STATUS = "/var/run/platform/eeprom/status"
 
-try:
-    _str_type = basestring
-except NameError:
-    _str_type = str
-
 class Eeprom(eeprom_tlvinfo.TlvInfoDecoder):
     def __init__(self):
         with open(os.path.dirname(__file__) + "/logging.conf", 'r') as f:
@@ -90,7 +85,7 @@ class Eeprom(eeprom_tlvinfo.TlvInfoDecoder):
             if elem is None:
                 continue
 
-            if isinstance(val, _str_type):
+            if isinstance(val, str):
                 value = val.replace('\0', '')
             else:
                 value = str(val)

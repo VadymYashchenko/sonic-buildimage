@@ -954,22 +954,22 @@ class pltfm_mgr_qsfp_alarm_flags_t(object):
             (fname, ftype, fid) = iprot.readFieldBegin()
             if ftype == TType.STOP:
                 break
-            if fid == -1:
+            if fid == 1:
                 if ftype == TType.BOOL:
                     self.highalarm = iprot.readBool()
                 else:
                     iprot.skip(ftype)
-            elif fid == -2:
+            elif fid == 2:
                 if ftype == TType.BOOL:
                     self.lowalarm = iprot.readBool()
                 else:
                     iprot.skip(ftype)
-            elif fid == -3:
+            elif fid == 3:
                 if ftype == TType.BOOL:
                     self.highwarning = iprot.readBool()
                 else:
                     iprot.skip(ftype)
-            elif fid == -4:
+            elif fid == 4:
                 if ftype == TType.BOOL:
                     self.lowwarning = iprot.readBool()
                 else:
@@ -984,21 +984,21 @@ class pltfm_mgr_qsfp_alarm_flags_t(object):
             oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
             return
         oprot.writeStructBegin('pltfm_mgr_qsfp_alarm_flags_t')
-        if self.lowwarning is not None:
-            oprot.writeFieldBegin('lowwarning', TType.BOOL, -4)
-            oprot.writeBool(self.lowwarning)
-            oprot.writeFieldEnd()
-        if self.highwarning is not None:
-            oprot.writeFieldBegin('highwarning', TType.BOOL, -3)
-            oprot.writeBool(self.highwarning)
+        if self.highalarm is not None:
+            oprot.writeFieldBegin('highalarm', TType.BOOL, 1)
+            oprot.writeBool(self.highalarm)
             oprot.writeFieldEnd()
         if self.lowalarm is not None:
-            oprot.writeFieldBegin('lowalarm', TType.BOOL, -2)
+            oprot.writeFieldBegin('lowalarm', TType.BOOL, 2)
             oprot.writeBool(self.lowalarm)
             oprot.writeFieldEnd()
-        if self.highalarm is not None:
-            oprot.writeFieldBegin('highalarm', TType.BOOL, -1)
-            oprot.writeBool(self.highalarm)
+        if self.highwarning is not None:
+            oprot.writeFieldBegin('highwarning', TType.BOOL, 3)
+            oprot.writeBool(self.highwarning)
+            oprot.writeFieldEnd()
+        if self.lowwarning is not None:
+            oprot.writeFieldBegin('lowwarning', TType.BOOL, 4)
+            oprot.writeBool(self.lowwarning)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -1044,22 +1044,22 @@ class pltfm_mgr_qsfp_threshold_t(object):
             (fname, ftype, fid) = iprot.readFieldBegin()
             if ftype == TType.STOP:
                 break
-            if fid == -1:
+            if fid == 1:
                 if ftype == TType.DOUBLE:
                     self.highalarm = iprot.readDouble()
                 else:
                     iprot.skip(ftype)
-            elif fid == -2:
+            elif fid == 2:
                 if ftype == TType.DOUBLE:
                     self.lowalarm = iprot.readDouble()
                 else:
                     iprot.skip(ftype)
-            elif fid == -3:
+            elif fid == 3:
                 if ftype == TType.DOUBLE:
                     self.highwarning = iprot.readDouble()
                 else:
                     iprot.skip(ftype)
-            elif fid == -4:
+            elif fid == 4:
                 if ftype == TType.DOUBLE:
                     self.lowwarning = iprot.readDouble()
                 else:
@@ -1074,21 +1074,21 @@ class pltfm_mgr_qsfp_threshold_t(object):
             oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
             return
         oprot.writeStructBegin('pltfm_mgr_qsfp_threshold_t')
-        if self.lowwarning is not None:
-            oprot.writeFieldBegin('lowwarning', TType.DOUBLE, -4)
-            oprot.writeDouble(self.lowwarning)
-            oprot.writeFieldEnd()
-        if self.highwarning is not None:
-            oprot.writeFieldBegin('highwarning', TType.DOUBLE, -3)
-            oprot.writeDouble(self.highwarning)
+        if self.highalarm is not None:
+            oprot.writeFieldBegin('highalarm', TType.DOUBLE, 1)
+            oprot.writeDouble(self.highalarm)
             oprot.writeFieldEnd()
         if self.lowalarm is not None:
-            oprot.writeFieldBegin('lowalarm', TType.DOUBLE, -2)
+            oprot.writeFieldBegin('lowalarm', TType.DOUBLE, 2)
             oprot.writeDouble(self.lowalarm)
             oprot.writeFieldEnd()
-        if self.highalarm is not None:
-            oprot.writeFieldBegin('highalarm', TType.DOUBLE, -1)
-            oprot.writeDouble(self.highalarm)
+        if self.highwarning is not None:
+            oprot.writeFieldBegin('highwarning', TType.DOUBLE, 3)
+            oprot.writeDouble(self.highwarning)
+            oprot.writeFieldEnd()
+        if self.lowwarning is not None:
+            oprot.writeFieldBegin('lowwarning', TType.DOUBLE, 4)
+            oprot.writeDouble(self.lowwarning)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -1111,21 +1111,31 @@ class pltfm_mgr_qsfp_threshold_t(object):
 class pltfm_mgr_qsfp_thresholds_t(object):
     """
     Attributes:
-     - temp
-     - vcc
      - rx_pwr
-     - tx_pwr
+     - temp
      - tx_bias
+     - tx_pwr
+     - vcc
+     - rx_pwr_is_set
+     - temp_is_set
+     - tx_bias_is_set
+     - tx_pwr_is_set
+     - vcc_is_set
 
     """
 
 
-    def __init__(self, temp=None, vcc=None, rx_pwr=None, tx_pwr=None, tx_bias=None,):
-        self.temp = temp
-        self.vcc = vcc
+    def __init__(self, rx_pwr=None, temp=None, tx_bias=None, tx_pwr=None, vcc=None, rx_pwr_is_set=None, temp_is_set=None, tx_bias_is_set=None, tx_pwr_is_set=None, vcc_is_set=None,):
         self.rx_pwr = rx_pwr
-        self.tx_pwr = tx_pwr
+        self.temp = temp
         self.tx_bias = tx_bias
+        self.tx_pwr = tx_pwr
+        self.vcc = vcc
+        self.rx_pwr_is_set = rx_pwr_is_set
+        self.temp_is_set = temp_is_set
+        self.tx_bias_is_set = tx_bias_is_set
+        self.tx_pwr_is_set = tx_pwr_is_set
+        self.vcc_is_set = vcc_is_set
 
     def read(self, iprot):
         if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
@@ -1136,34 +1146,59 @@ class pltfm_mgr_qsfp_thresholds_t(object):
             (fname, ftype, fid) = iprot.readFieldBegin()
             if ftype == TType.STOP:
                 break
-            if fid == -1:
-                if ftype == TType.STRUCT:
-                    self.temp = pltfm_mgr_qsfp_threshold_t()
-                    self.temp.read(iprot)
-                else:
-                    iprot.skip(ftype)
-            elif fid == -2:
-                if ftype == TType.STRUCT:
-                    self.vcc = pltfm_mgr_qsfp_threshold_t()
-                    self.vcc.read(iprot)
-                else:
-                    iprot.skip(ftype)
-            elif fid == -3:
+            if fid == 1:
                 if ftype == TType.STRUCT:
                     self.rx_pwr = pltfm_mgr_qsfp_threshold_t()
                     self.rx_pwr.read(iprot)
                 else:
                     iprot.skip(ftype)
-            elif fid == -4:
+            elif fid == 2:
+                if ftype == TType.STRUCT:
+                    self.temp = pltfm_mgr_qsfp_threshold_t()
+                    self.temp.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.STRUCT:
+                    self.tx_bias = pltfm_mgr_qsfp_threshold_t()
+                    self.tx_bias.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 4:
                 if ftype == TType.STRUCT:
                     self.tx_pwr = pltfm_mgr_qsfp_threshold_t()
                     self.tx_pwr.read(iprot)
                 else:
                     iprot.skip(ftype)
-            elif fid == -5:
+            elif fid == 5:
                 if ftype == TType.STRUCT:
-                    self.tx_bias = pltfm_mgr_qsfp_threshold_t()
-                    self.tx_bias.read(iprot)
+                    self.vcc = pltfm_mgr_qsfp_threshold_t()
+                    self.vcc.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 6:
+                if ftype == TType.BOOL:
+                    self.rx_pwr_is_set = iprot.readBool()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 7:
+                if ftype == TType.BOOL:
+                    self.temp_is_set = iprot.readBool()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 8:
+                if ftype == TType.BOOL:
+                    self.tx_bias_is_set = iprot.readBool()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 9:
+                if ftype == TType.BOOL:
+                    self.tx_pwr_is_set = iprot.readBool()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 10:
+                if ftype == TType.BOOL:
+                    self.vcc_is_set = iprot.readBool()
                 else:
                     iprot.skip(ftype)
             else:
@@ -1176,25 +1211,45 @@ class pltfm_mgr_qsfp_thresholds_t(object):
             oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
             return
         oprot.writeStructBegin('pltfm_mgr_qsfp_thresholds_t')
+        if self.rx_pwr is not None:
+            oprot.writeFieldBegin('rx_pwr', TType.STRUCT, 1)
+            self.rx_pwr.write(oprot)
+            oprot.writeFieldEnd()
+        if self.temp is not None:
+            oprot.writeFieldBegin('temp', TType.STRUCT, 2)
+            self.temp.write(oprot)
+            oprot.writeFieldEnd()
         if self.tx_bias is not None:
-            oprot.writeFieldBegin('tx_bias', TType.STRUCT, -5)
+            oprot.writeFieldBegin('tx_bias', TType.STRUCT, 3)
             self.tx_bias.write(oprot)
             oprot.writeFieldEnd()
         if self.tx_pwr is not None:
-            oprot.writeFieldBegin('tx_pwr', TType.STRUCT, -4)
+            oprot.writeFieldBegin('tx_pwr', TType.STRUCT, 4)
             self.tx_pwr.write(oprot)
             oprot.writeFieldEnd()
-        if self.rx_pwr is not None:
-            oprot.writeFieldBegin('rx_pwr', TType.STRUCT, -3)
-            self.rx_pwr.write(oprot)
-            oprot.writeFieldEnd()
         if self.vcc is not None:
-            oprot.writeFieldBegin('vcc', TType.STRUCT, -2)
+            oprot.writeFieldBegin('vcc', TType.STRUCT, 5)
             self.vcc.write(oprot)
             oprot.writeFieldEnd()
-        if self.temp is not None:
-            oprot.writeFieldBegin('temp', TType.STRUCT, -1)
-            self.temp.write(oprot)
+        if self.rx_pwr_is_set is not None:
+            oprot.writeFieldBegin('rx_pwr_is_set', TType.BOOL, 6)
+            oprot.writeBool(self.rx_pwr_is_set)
+            oprot.writeFieldEnd()
+        if self.temp_is_set is not None:
+            oprot.writeFieldBegin('temp_is_set', TType.BOOL, 7)
+            oprot.writeBool(self.temp_is_set)
+            oprot.writeFieldEnd()
+        if self.tx_bias_is_set is not None:
+            oprot.writeFieldBegin('tx_bias_is_set', TType.BOOL, 8)
+            oprot.writeBool(self.tx_bias_is_set)
+            oprot.writeFieldEnd()
+        if self.tx_pwr_is_set is not None:
+            oprot.writeFieldBegin('tx_pwr_is_set', TType.BOOL, 9)
+            oprot.writeBool(self.tx_pwr_is_set)
+            oprot.writeFieldEnd()
+        if self.vcc_is_set is not None:
+            oprot.writeFieldBegin('vcc_is_set', TType.BOOL, 10)
+            oprot.writeBool(self.vcc_is_set)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -1355,11 +1410,35 @@ pltfm_mgr_fan_info_t.thrift_spec = (
     (4, TType.I32, 'percent', None, None, ),  # 4
 )
 all_structs.append(pltfm_mgr_qsfp_alarm_flags_t)
-pltfm_mgr_qsfp_alarm_flags_t.thrift_spec = ()
+pltfm_mgr_qsfp_alarm_flags_t.thrift_spec = (
+    None,  # 0
+    (1, TType.BOOL, 'highalarm', None, None, ),  # 1
+    (2, TType.BOOL, 'lowalarm', None, None, ),  # 2
+    (3, TType.BOOL, 'highwarning', None, None, ),  # 3
+    (4, TType.BOOL, 'lowwarning', None, None, ),  # 4
+)
 all_structs.append(pltfm_mgr_qsfp_threshold_t)
-pltfm_mgr_qsfp_threshold_t.thrift_spec = ()
+pltfm_mgr_qsfp_threshold_t.thrift_spec = (
+    None,  # 0
+    (1, TType.DOUBLE, 'highalarm', None, None, ),  # 1
+    (2, TType.DOUBLE, 'lowalarm', None, None, ),  # 2
+    (3, TType.DOUBLE, 'highwarning', None, None, ),  # 3
+    (4, TType.DOUBLE, 'lowwarning', None, None, ),  # 4
+)
 all_structs.append(pltfm_mgr_qsfp_thresholds_t)
-pltfm_mgr_qsfp_thresholds_t.thrift_spec = ()
+pltfm_mgr_qsfp_thresholds_t.thrift_spec = (
+    None,  # 0
+    (1, TType.STRUCT, 'rx_pwr', [pltfm_mgr_qsfp_threshold_t, None], None, ),  # 1
+    (2, TType.STRUCT, 'temp', [pltfm_mgr_qsfp_threshold_t, None], None, ),  # 2
+    (3, TType.STRUCT, 'tx_bias', [pltfm_mgr_qsfp_threshold_t, None], None, ),  # 3
+    (4, TType.STRUCT, 'tx_pwr', [pltfm_mgr_qsfp_threshold_t, None], None, ),  # 4
+    (5, TType.STRUCT, 'vcc', [pltfm_mgr_qsfp_threshold_t, None], None, ),  # 5
+    (6, TType.BOOL, 'rx_pwr_is_set', None, None, ),  # 6
+    (7, TType.BOOL, 'temp_is_set', None, None, ),  # 7
+    (8, TType.BOOL, 'tx_bias_is_set', None, None, ),  # 8
+    (9, TType.BOOL, 'tx_pwr_is_set', None, None, ),  # 9
+    (10, TType.BOOL, 'vcc_is_set', None, None, ),  # 10
+)
 all_structs.append(InvalidPltfmMgrOperation)
 InvalidPltfmMgrOperation.thrift_spec = (
     None,  # 0

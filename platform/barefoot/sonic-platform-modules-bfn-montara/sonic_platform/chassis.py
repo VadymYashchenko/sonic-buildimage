@@ -8,6 +8,7 @@ try:
     from sonic_platform.fan_drawer import fan_drawer_list_get
     from sonic_platform.thermal import thermal_list_get
     from eeprom import Eeprom
+    from sonic_platform.thermal_manager import ThermalManager
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
@@ -24,6 +25,8 @@ class Chassis(ChassisBase):
         self.__thermals = None
         self.__psu_list = None
         self.__sfp_list = None
+        self.__thermal_mngr = None
+        self.__polling_thermal_time = 30
 
     @property
     def _eeprom(self):
@@ -86,6 +89,16 @@ class Chassis(ChassisBase):
     @_sfp_list.setter
     def _sfp_list(self, value):
         pass
+
+    @property
+    def _thermal_mngr(self):
+        if self.__thermal_mngr is None:
+            self.__thermal_mngr = ThermalManager(self.__polling_thermal_time)
+        return self.__thermal_mngr
+
+    @_thermal_mngr.setter
+    def _thermal_mngr(self, value):
+        self.__thermal_mngr = ThermalManager(value)
 
     def get_name(self):
         """
@@ -212,3 +225,38 @@ class Chassis(ChassisBase):
             bool: True if it is replaceable.
         """
         return False
+
+    def initizalize_system_led(self):
+        self.system_led = ""
+        return True
+
+    def set_status_led(self, color):
+        """
+        Sets the state of the system LED
+
+        Args:
+            color: A string representing the color with which to set the
+                   system LED
+
+        Returns:
+            bool: True if system LED state is set successfully, False if not
+        """
+        self.system_led = color
+        return True
+
+    def get_status_led(self):
+        """
+        Gets the state of the system LED
+
+        Returns:
+            A string, one of the valid LED color strings which could be vendor
+            specified.
+        """
+        return self.system_led
+
+    def get_thermal_manager(self):
+        return self._thermal_mngr
+
+    def __del__(self):
+        if self.__thermal_mngr is not None:
+            self.__thermal_mngr.stop()
