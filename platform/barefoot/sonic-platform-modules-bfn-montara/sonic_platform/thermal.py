@@ -88,6 +88,11 @@ class Thermal(ThermalBase):
             "coretemp-isa-0000:core-1":          Threshold(99.9, 82.0, 0.2, 0.1),
             "coretemp-isa-0000:core-2":          Threshold(99.9, 82.0, 0.2, 0.1),
             "coretemp-isa-0000:core-3":          Threshold(99.9, 82.0, 0.2, 0.1),
+            # add from Montara"
+            "psu_driver-i2c-7-59:psu2-temp1":    Threshold(50.0, 47.5, 0.2, 0.1),
+            "psu_driver-i2c-7-59:psu2-temp2":    Threshold(90.0, 85.5, 0.2, 0.1),
+            "tmp75-i2c-8-48:outlet-right-temp":  Threshold(60.0, 57.0, 0.2, 0.1),
+            "tmp75-i2c-8-49:outlet-left-temp":   Threshold(60.0, 57.0, 0.2, 0.1)
     }
 
     def __init__(self, chip, label, index = 0):
@@ -121,6 +126,8 @@ class Thermal(ThermalBase):
         temp = self.__get('temp', 'input')
         self.__collect_temp.append(float(temp))
         self.__collect_temp.sort()
+        if len(self.__collect_temp) == 3:
+            del self.__collect_temp[1]
         return float(temp)
 
     def get_high_threshold(self) -> float:
@@ -155,13 +162,15 @@ class Thermal(ThermalBase):
         return 'N/A'
 
     def get_minimum_recorded(self) -> float:
-        temp = self.__collect_temp[0] if len(self.__collect_temp) > 0 else 0.1
+        temp = self.__collect_temp[0] if len(self.__collect_temp) > 0 else 36.6
+        temp = temp if temp <= 100.0 else 100.0
         temp = temp if temp > 0.0 else 0.1
         return float(temp)
 
     def get_maximum_recorded(self) -> float:
-        temp = self.__collect_temp[-1] if len(self.__collect_temp) > 0 else 100.0
+        temp = self.__collect_temp[-1] if len(self.__collect_temp) > 0 else 36.6
         temp = temp if temp <= 100.0 else 100.0
+        temp = temp if temp > 0.0 else 0.1
         return float(temp)
 
     def get_position_in_parent(self):
