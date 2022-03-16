@@ -270,6 +270,26 @@ class Sfp(SfpBase):
         _, status = pltfm_mgr_try(get_qsfp_reset, False)
         return status
 
+    def get_rx_los(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_rx_los(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_rx_los_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_rx_los, False)
+        return status
+
+    def get_rx_power(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_rx_power(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_rx_pwr_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_rx_power, False)
+        return status
+
+        pltfm_mgr_qsfp_chan_rx_pwr_get
+
     def is_replaceable(self):
         """
         Indicate whether this device is replaceable.
