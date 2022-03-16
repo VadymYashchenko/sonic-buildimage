@@ -288,7 +288,14 @@ class Sfp(SfpBase):
         _, status = pltfm_mgr_try(get_qsfp_rx_power, False)
         return status
 
-        pltfm_mgr_qsfp_chan_rx_pwr_get
+    def get_temperature(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_temperature(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_temperature_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_temperature, False)
+        return status
 
     def is_replaceable(self):
         """
