@@ -297,6 +297,70 @@ class Sfp(SfpBase):
         _, status = pltfm_mgr_try(get_qsfp_temperature, False)
         return status
 
+    
+    def get_transceiver_threshold_info(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_threshold(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_thresholds_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_threshold, False)
+        return status
+
+    def get_tx_bias(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_tx_bias(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_bias_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_bias, False)
+        return status
+    
+    def get_tx_fault(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_tx_fault(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_fault_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_fault, False)
+        return status
+
+    def get_tx_power(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_tx_power(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_pwr_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_power, False)
+        return status
+
+    def get_voltage(self):
+        """
+        Retrieves the reset status of SFP
+        """
+        def get_qsfp_voltage(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_voltage_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_voltage, False)
+        return status
+
+    def get_power_override(self):
+        def get_qsfp_power_override(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_pwr_override_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_power_override, False)
+        return status
+
+    def tx_disable(self):
+        def get_qsfp_tx_disable(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_tx_is_disabled(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_disable, False)
+        return status
+
+    def tx_disable_channel(self, state):
+        def get_qsfp_tx_disable_channel(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_tx_disable(self.port_num, state)
+        _, status = pltfm_mgr_try(get_qsfp_tx_disable_channel, False)
+        return status
+
     def is_replaceable(self):
         """
         Indicate whether this device is replaceable.
