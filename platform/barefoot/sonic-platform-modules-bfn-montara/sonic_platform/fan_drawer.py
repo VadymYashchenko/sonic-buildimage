@@ -55,7 +55,7 @@ class FanDrawer(FanDrawerBase):
         """
         return 'N/A'
 
-    def set_status_led(self, color):
+    def set_status_led(self, fan_num, color):
         """
         Set led to expected color
         Args:
@@ -65,7 +65,9 @@ class FanDrawer(FanDrawerBase):
             bool: True if set success, False if fail.
         """
         # Fan tray status LED controlled by BMC
-        return False
+        # return False
+
+        return self._fan_list[fan_num].set_status_led(color)
 
     def get_status_led(self):
         """
