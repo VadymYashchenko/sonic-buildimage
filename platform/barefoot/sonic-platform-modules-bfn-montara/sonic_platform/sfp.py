@@ -240,7 +240,37 @@ class Sfp(SfpBase):
     def __init__(self, port_num):
         self.port_num = port_num
         SfpBase.__init__(self)
-        
+
+    def get_presence(self):
+        with Sfp.sfputil.eeprom_action() as u:
+            return u.get_presence(self.port_num)
+
+    def get_lpmode(self):
+        with Sfp.sfputil.eeprom_action() as u:
+            return u.get_low_power_mode(self.port_num)
+
+    def set_lpmode(self, lpmode):
+        with Sfp.sfputil.eeprom_action() as u:
+            return u.set_low_power_mode(self.port_num, lpmode)
+
+    def reset(self):
+        return Sfp.sfputil.reset(self.port_num)
+
+    def get_transceiver_info(self):
+        with Sfp.sfputil.eeprom_action() as u:
+            return u.get_transceiver_info_dict(self.port_num)
+
+    def get_transceiver_bulk_status(self):
+        with Sfp.sfputil.eeprom_action() as u:
+            return u.get_transceiver_dom_info_dict(self.port_num)
+
+    def get_transceiver_threshold_info(self):
+        with Sfp.sfputil.eeprom_action() as u:
+            return u.get_transceiver_dom_threshold_info_dict(self.port_num)
+
+    def get_change_event(self, timeout=0):
+        return Sfp.get_transceiver_change_event(timeout)
+
     def get_model(self):
         """
         Retrieves the model number (or part number) of the device
@@ -340,37 +370,7 @@ class Sfp(SfpBase):
         Returns:
             bool: True if it is replaceable.
         """
-        return True
-
-    def get_presence(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_presence(self.port_num)
-
-    def get_lpmode(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_low_power_mode(self.port_num)
-
-    def set_lpmode(self, lpmode):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.set_low_power_mode(self.port_num, lpmode)
-
-    def reset(self):
-        return Sfp.sfputil.reset(self.port_num)
-
-    def get_transceiver_info(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_transceiver_info_dict(self.port_num)
-
-    def get_transceiver_bulk_status(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_transceiver_dom_info_dict(self.port_num)
-
-    def get_transceiver_threshold_info(self):
-        with Sfp.sfputil.eeprom_action() as u:
-            return u.get_transceiver_dom_threshold_info_dict(self.port_num)
-
-    def get_change_event(self, timeout=0):
-        return Sfp.get_transceiver_change_event(timeout)
+        return True    
 
 def sfp_list_get():
     sfp_list = []
