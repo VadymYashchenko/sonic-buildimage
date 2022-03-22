@@ -13,6 +13,7 @@ try:
 
     from .platform_thrift_client import ThriftClient
     from .platform_thrift_client import thrift_try
+    from .platform_thrift_client import pltfm_mgr_try
 
     from sonic_platform_base.sfp_base import SfpBase
     from sonic_platform_base.sonic_sfp.sfputilbase import SfpUtilBase
@@ -269,6 +270,107 @@ class Sfp(SfpBase):
 
     def get_change_event(self, timeout=0):
         return Sfp.get_transceiver_change_event(timeout)
+
+    def get_model(self):
+        """
+        Retrieves the model number (or part number) of the device
+        Returns:
+            string: Model/part number of device
+        """
+        def qsfp_model_get(client):
+            return client.pltfm_mgr.pltfm_mgr_qsfp_info_get(self.port_num)
+
+        _, status = pltfm_mgr_try(qsfp_model_get, False)
+        return status
+
+    def get_name(self):
+        """
+        Retrieves the name of the device
+            Returns:
+            string: The name of the device
+        """
+        return "sfp{}".format(self.port_num)
+
+    def get_reset_status(self):
+        def get_qsfp_reset(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_reset_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_reset, False)
+        return status
+
+    def get_rx_los(self):
+        def get_qsfp_rx_los(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_rx_los_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_rx_los, False)
+        return status
+
+    def get_rx_power(self):
+        def get_qsfp_rx_power(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_rx_pwr_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_rx_power, False)
+        return status
+
+    def get_temperature(self):
+        def get_qsfp_temperature(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_temperature_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_temperature, False)
+        return status
+
+    
+    def get_transceiver_threshold_info(self):
+        def get_qsfp_threshold(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_thresholds_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_threshold, False)
+        return status
+
+    def get_tx_bias(self):
+        def get_qsfp_tx_bias(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_bias_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_bias, False)
+        return status
+    
+    def get_tx_fault(self):
+        def get_qsfp_tx_fault(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_fault_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_fault, False)
+        return status
+
+    def get_tx_power(self):
+        def get_qsfp_tx_power(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_chan_tx_pwr_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_tx_power, False)
+        return status
+
+    def get_voltage(self):
+        def get_qsfp_voltage(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_voltage_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_voltage, False)
+        return status
+
+    def get_power_override(self):
+        def get_qsfp_power_override(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_pwr_override_get(self.port_num)
+        _, status = pltfm_mgr_try(get_qsfp_power_override, False)
+        return status
+
+    def tx_disable(self):
+        def get_qsfp_tx_disable(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_tx_is_disabled()
+        _, status = pltfm_mgr_try(get_qsfp_tx_disable, False)
+        return status
+
+    def tx_disable_channel(self):
+        def get_qsfp_tx_disable_channel(pltfm_mgr):
+            return pltfm_mgr.pltfm_mgr_qsfp_tx_disable()
+        _, status = pltfm_mgr_try(get_qsfp_tx_disable_channel, False)
+        return status
+
+    def is_replaceable(self):
+        """
+        Indicate whether this device is replaceable.
+        Returns:
+            bool: True if it is replaceable.
+        """
+        return True    
 
 def sfp_list_get():
     sfp_list = []
