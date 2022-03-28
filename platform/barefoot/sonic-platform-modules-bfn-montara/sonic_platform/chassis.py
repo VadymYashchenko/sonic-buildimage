@@ -40,7 +40,6 @@ class Chassis(ChassisBase):
         self.__thermals = None
         self.__psu_list = None
         self.__sfp_list = None
-        self.__polling_thermal_time = 30
 
         self.ready = False
         self.phy_port_cur_state = {}
