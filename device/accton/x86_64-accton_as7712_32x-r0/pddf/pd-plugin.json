@@ -48,7 +48,7 @@
         
         "duty_cycle_to_pwm": "lambda dc: ((dc*100.0)/625 - 1)",
 
-        "pwm_to_duty_cycle": "lambda pwm: math.ceil(((pwm+1)*625.0)/100)"
+        "pwm_to_duty_cycle": "lambda pwm: (((pwm+1)*625.0)/100)"
     }
 
 }

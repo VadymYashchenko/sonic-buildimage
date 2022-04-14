@@ -3,14 +3,6 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 # Build and push sonic-slave-[buster|jessie|stretch] images for amd64/armhf/arm64
-resources:
-  repositories:
-  - repository: buildimage
-    type: github
-    name: Azure/sonic-buildimage
-    ref: master
-    endpoint: build
-
 parameters:
 - name: arch
   type: string
@@ -45,7 +37,10 @@ jobs:
   pool: ${{ parameters.pool }}
   steps:
   - template: cleanup.yml
-  - template: .azure-pipelines/template-clean-sonic-slave.yml@buildimage
+  - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    - template: template-clean-sonic-slave.yml
+  - ${{ else }}:
+    - template: '/.azure-pipelines/template-clean-sonic-slave.yml@buildimage'
   - checkout: self
     clean: true
     submodules: recursive
@@ -106,9 +101,13 @@ jobs:
       containerRegistry: ${{ parameters.registry_conn }}
       repository: $(VARIABLE_SLAVE_BASE_IMAGE)
       command: push
-      tags: |
-        $(VARIABLE_SLAVE_BASE_TAG)
-        latest
+      ${{ if eq(variables['Build.SourceBranchName'], 'master') }}:
+        tags: |
+          $(VARIABLE_SLAVE_BASE_TAG)
+          latest
+      ${{ else }}:
+        tags: |
+          $(VARIABLE_SLAVE_BASE_TAG)
   - ${{ if ne(parameters.arch, 'amd64') }}:
     - task: Docker@2
       condition: ne(variables['Build.Reason'], 'PullRequest')

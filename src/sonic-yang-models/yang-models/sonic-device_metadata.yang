@@ -88,7 +88,7 @@ module sonic-device_metadata {
                 leaf type {
                     type string {
                         length 1..255;
-                        pattern "ToRRouter|LeafRouter|SpineChassisFrontendRouter|ChassisBackendRouter|ASIC|MgmtToRRouter|SpineRouter|BackEndToRRouter|BackEndLeafRouter|EPMS|MgmtTsToR|not-provisioned";
+                        pattern "ToRRouter|LeafRouter|SpineChassisFrontendRouter|ChassisBackendRouter|ASIC|MgmtToRRouter|SpineRouter|BackEndToRRouter|BackEndLeafRouter|EPMS|MgmtTsToR|BmcMgmtToRRouter|not-provisioned";
                     }
                 }
 
@@ -129,7 +129,7 @@ module sonic-device_metadata {
 
                 leaf sub_role {
                     type string;
-                    description "sub_role indicates if ASIC is FrondEnd or BackEnd.";
+                    description "sub_role indicates if ASIC is FrontEnd or BackEnd.";
                 }
 
                 leaf downstream_subrole {
@@ -182,6 +182,11 @@ module sonic-device_metadata {
                 leaf max_cores {
                     type uint8;
                     description "Maximum number of cores in a VoQ Switch (chassis).";
+                }
+
+                leaf dhcp_server {
+                    type stypes:admin_mode;
+                    description "Indicate whether enable the embedded DHCP server.";
                 }
             }
             /* end of container localhost */

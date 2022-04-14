@@ -36,6 +36,9 @@
     "DEVICE_METADATA_TYPE_CORRECT_PATTERN": {
         "desc": "DEVICE_METADATA correct value for Type field"
     },
+    "DEVICE_METADATA_TYPE_BMC_MGMT_TOR_PATTERN": {
+        "desc": "DEVICE_METADATA value as BmcMgmtToRRouter for Type field"
+    },
     "DEVICE_METADATA_TYPE_NOT_PROVISIONED_PATTERN": {
         "desc": "DEVICE_METADATA value as not-provisioned for Type field"
     },
@@ -103,6 +106,13 @@
     },
     "DEVICE_METADATA_VALID_SUB_ROLE_CONFIG": {
         "desc": "Verifying valid sub_role configuration."
+    },
+    "DEVICE_METADATA_VALID_DHCP_SERVER": {
+        "desc": "Verifying dhcp_server configuration."
+    },
+    "DEVICE_METADATA_INVALID_DHCP_SERVER": {
+        "desc": "Verifying invalid dhcp_server configuration.",
+        "eStrKey": "InvalidValue"
     }
 
 }
