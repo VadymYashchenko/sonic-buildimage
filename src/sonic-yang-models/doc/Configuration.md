@@ -25,6 +25,7 @@ Table of Contents
          * [Device neighbor metada](#device-neighbor-metada)  
          * [DSCP_TO_TC_MAP](#dscp_to_tc_map)  
          * [FLEX_COUNTER_TABLE](#flex_counter_table)  
+         * [KDUMP](#kdump)
          * [L2 Neighbors](#l2-neighbors)  
          * [Loopback Interface](#loopback-interface)  
          * [LOSSLESS_TRAFFIC_PATTERN](#LOSSLESS_TRAFFIC_PATTERN)  
@@ -861,6 +862,20 @@ instance is supported in SONiC.
 
 ```
 
+### KDUMP
+
+```
+{
+    "KDUMP": {
+        "config": {
+            "enabled": "true",
+            "num_dumps": "3",
+            "memory": "0M-2G:256M,2G-4G:256M,4G-8G:384M,8G-:448M"
+         }
+     }
+}
+
+```
 
 ### L2 Neighbors
 
@@ -1152,7 +1167,8 @@ optional attributes.
             "description": "fortyGigE1/1/1",
             "mtu": "9100",
             "alias": "fortyGigE1/1/1",
-            "speed": "40000"
+            "speed": "40000",
+            "link_training": "off"
         },
         "Ethernet1": {
             "index": "1",
@@ -1161,9 +1177,10 @@ optional attributes.
             "mtu": "9100",
             "alias": "fortyGigE1/1/2",
             "admin_status": "up",
-            "speed": "40000"
+            "speed": "40000",
+            "link_training": "on"
         },
-		"Ethernet63": {
+        "Ethernet63": {
             "index": "63",
             "lanes": "87,88",
             "description": "fortyGigE1/4/16",

@@ -330,12 +330,7 @@ sudo chmod 755 $FILESYSTEM_ROOT/usr/bin/restart_service
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install smartmontools=7.2-1
 
 # Install custom-built openssh sshd
-sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/openssh-server_*.deb
-
-# Remove sshd host keys, and will regenerate on first sshd start. This needs to be
-# done again here because our custom version of sshd is being installed, which
-# will regenerate the sshd host keys.
-sudo rm -f $FILESYSTEM_ROOT/etc/ssh/ssh_host_*_key*
+sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/openssh-server_${OPENSSH_VERSION}_*.deb
 
 {% if sonic_asic_platform == 'broadcom' %}
 # Install custom-built flashrom
@@ -615,7 +610,9 @@ sudo LANG=C chroot $FILESYSTEM_ROOT depmod -a {{kversion}}
 sudo dpkg --root=$FILESYSTEM_ROOT -i {{deb}} || sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f --download-only
 
 sudo mkdir -p $FILESYSTEM_ROOT/$PLATFORM_DIR/{{dev}}
-sudo cp {{ deb }} $FILESYSTEM_ROOT/$PLATFORM_DIR/{{dev}}/
+sudo mkdir -p $FILESYSTEM_ROOT/$PLATFORM_DIR/common
+sudo cp {{ deb }} $FILESYSTEM_ROOT/$PLATFORM_DIR/common/
+sudo ln -sf "../common/{{ debfilename }}" "$FILESYSTEM_ROOT/$PLATFORM_DIR/{{dev}}/{{ debfilename }}"
 for f in $(find $FILESYSTEM_ROOT/var/cache/apt/archives -name "*.deb"); do
     sudo mv $f $FILESYSTEM_ROOT/$PLATFORM_DIR/{{dev}}/
 done
@@ -624,6 +621,11 @@ sudo dpkg --root=$FILESYSTEM_ROOT -P {{ debname }}
 
 {% endfor %}
 {% endif %}
+
+# Remove sshd host keys, and will regenerate on first sshd start. This needs to be
+# done again here because our custom version of sshd is being installed, which
+# will regenerate the sshd host keys.
+sudo rm -f $FILESYSTEM_ROOT/etc/ssh/ssh_host_*_key*
 
 sudo rm -f $FILESYSTEM_ROOT/usr/sbin/policy-rc.d
 
@@ -830,6 +832,9 @@ echo "telemetry.timer" | sudo tee -a $GENERATED_SERVICE_FILE
 sudo cp $BUILD_TEMPLATES/mgmt-framework.timer $FILESYSTEM_ROOT_USR_LIB_SYSTEMD_SYSTEM
 echo "mgmt-framework.timer" | sudo tee -a $GENERATED_SERVICE_FILE
 {% endif %}
+
+sudo cp $BUILD_TEMPLATES/pmon.timer $FILESYSTEM_ROOT_USR_LIB_SYSTEMD_SYSTEM
+echo "pmon.timer" | sudo tee -a $GENERATED_SERVICE_FILE
 
 sudo cp $BUILD_TEMPLATES/sonic.target $FILESYSTEM_ROOT_USR_LIB_SYSTEMD_SYSTEM
 sudo LANG=C chroot $FILESYSTEM_ROOT systemctl enable sonic.target

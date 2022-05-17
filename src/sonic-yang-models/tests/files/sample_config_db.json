@@ -65,12 +65,12 @@
         },
         "BUFFER_PORT_INGRESS_PROFILE_LIST": {
             "Ethernet9": {
-                "profile_list": ["ingress_lossy_profile"]
+                "profile_list": "ingress_lossy_profile"
             }
         },
         "BUFFER_PORT_EGRESS_PROFILE_LIST": {
             "Ethernet9": {
-                "profile_list": ["egress_lossless_profile", "egress_lossy_profile"]
+                "profile_list": "egress_lossless_profile,egress_lossy_profile"
             }
         },
         "PORTCHANNEL": {
@@ -103,18 +103,32 @@
                 "tpid": "0x9200",
                 "mtu": "9100",
                 "lacp_key": "auto"
+            },
+            "PortChannel42": {
+                "admin_status": "up",
+                "members": [
+                    "Ethernet-BP0",
+                    "Ethernet-BP4"
+                ],
+                "min_links": "2",
+                "mtu": "9100",
+                "tpid": "0x8100"
             }
         },
         "PORTCHANNEL_INTERFACE": {
                 "PortChannel0003": {
                     "nat_zone": "1"
                 },
-                "PortChannel0004": {"vrf_name": "Vrf_blue"}
+                "PortChannel0004": {"vrf_name": "Vrf_blue"},
+                "PortChannel42|10.1.0.1/31": {},
+                "PortChannel42|2603:10e2:400:1::2/126": {}
         },
         "PORTCHANNEL_MEMBER": {
             "PortChannel0003|Ethernet1": {},
             "PortChannel0004|Ethernet2": {},
-            "PortChannel2|Ethernet12": {}
+            "PortChannel2|Ethernet12": {},
+            "PortChannel42|Ethernet-BP0": {},
+            "PortChannel42|Ethernet-BP4": {}
         },
         "VLAN_INTERFACE": {
             "Vlan111": {
@@ -394,10 +408,7 @@
         "NTP": {
             "global": {
                 "vrf": "mgmt",
-                "src_intf": [
-                    "eth0",
-                    "Loopback0"
-                ]
+                "src_intf": "eth0;Loopback0"
             }
         },
         "NTP_SERVER": {
@@ -427,7 +438,8 @@
                 "index": "0",
                 "asic_port_name": "Eth0-ASIC1",
                 "role": "Ext",
-                "macsec": "test"
+                "macsec": "test",
+                "link_training": "off"
             },
             "Ethernet1": {
                 "alias": "Eth1/2",
@@ -435,7 +447,11 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "autoneg": "on",
+                "adv_speeds": "100000,50000",
+                "adv_interface_types": "CR,CR4",
+                "link_training": "on"
             },
             "Ethernet2": {
                 "alias": "Eth1/3",
@@ -443,7 +459,10 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "autoneg": "on",
+                "adv_speeds": "all",
+                "adv_interface_types": "all"
             },
             "Ethernet3": {
                 "alias": "Eth1/4",
@@ -734,7 +753,33 @@
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up"
-            }
+            },
+            "Ethernet-BP0": {
+                "admin_status": "up",
+                "alias": "Eth4-ASIC0",
+                "asic_port_name": "Eth4-ASIC0",
+                "description": "ASIC2:Eth0-ASIC2",
+                "index": "0",
+                "lanes": "17,18,19,20",
+                "mtu": "9100",
+                "pfc_asym": "off",
+                "role": "Int",
+                "speed": "40000",
+                "tpid": "0x8100"
+            },
+            "Ethernet-BP4": {
+                "admin_status": "up",
+                "alias": "Eth5-ASIC0",
+                "asic_port_name": "Eth5-ASIC0",
+                "description": "ASIC2:Eth1-ASIC2",
+                "index": "1",
+                "lanes": "21,22,23,24",
+                "mtu": "9100",
+                "pfc_asym": "off",
+                "role": "Int",
+                "speed": "40000",
+                "tpid": "0x8100"
+            } 
         },
         "ACL_TABLE": {
             "V4-ACL-TABLE": {
@@ -1689,6 +1734,28 @@
             }
         },
 
+        "BGP_VOQ_CHASSIS_NEIGHBOR": {
+            "10.0.0.1": {
+                "asn": "64850",
+                "holdtime": "180",
+                "keepalive": "60",
+                "local_addr": "10.0.0.2",
+                "name": "sonic-chassis-lc3",
+                "nhopself": "0",
+                "rrclient": "0",
+                "admin_status": "up"
+            },
+            "3333::3:6": {
+                "asn": "64850",
+                "holdtime": "180",
+                "keepalive": "60",
+                "local_addr": "3333::3:3",
+                "name": "sonic-chassis-lc3",
+                "nhopself": "0",
+                "rrclient": "0",
+                "admin_status": "up"
+            }
+        },
 
         "MACSEC_PROFILE": {
             "test": {
@@ -1704,8 +1771,38 @@
                 "send_sci": "true",
                 "rekey_period": "3600"
             }
-        }
+        },
 
+        "BGP_INTERNAL_NEIGHBOR": {
+            "10.1.0.0": {
+                "asn": "64850",
+                "holdtime": "180",
+                "keepalive": "60",
+                "local_addr": "10.1.0.1",
+                "name": "ASIC1",
+                "nhopself": "0",
+                "rrclient": "0",
+                "admin_status": "up"
+            },
+            "2603:10e2:400:1::1": {
+                "asn": "64850",
+                "holdtime": "180",
+                "keepalive": "60",
+                "local_addr": "2603:10e2:400:1::2",
+                "name": "ASIC0",
+                "nhopself": "0",
+                "rrclient": "0",
+                "admin_status": "up"
+            }
+        },
+
+        "KDUMP": {
+            "config": {
+                "enabled": "true",
+                "num_dumps": "3",
+                "memory": "0M-2G:256M,2G-4G:256M,4G-8G:384M,8G-:448M"
+             }
+         }
     },
     "SAMPLE_CONFIG_DB_UNKNOWN": {
         "UNKNOWN_TABLE": {

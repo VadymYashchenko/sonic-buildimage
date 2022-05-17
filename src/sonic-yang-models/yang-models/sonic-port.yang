@@ -61,7 +61,15 @@ module sonic-port{
 				leaf speed {
 					mandatory true;
 					type uint32 {
-						range 1..400000;
+						range 1..800000;
+					}
+				}
+
+				leaf link_training {
+					description "Port link training mode";
+
+					type string {
+						pattern "on|off";
 					}
 				}
 
@@ -78,7 +86,7 @@ module sonic-port{
 					
 					type union {
 						type uint32 {
-							range 1..400000;
+							range 1..800000;
 						}
 						type string {
 							pattern "all";
