@@ -40,8 +40,14 @@ fi
 case "$1" in
 start)
         echo -n "Setting up board... "
-
+        modprobe i2c-i801
+        modprobe i2c-isch
+        modprobe i2c-ismt
         modprobe i2c-dev
+        modprobe i2c-mux
+        modprobe i2c-smbus
+        modprobe i2c-mux-gpio
+
         modprobe i2c-mux-pca954x force-deselect-on-exit=1
         modprobe dx010_wdt
         modprobe leds-dx010
@@ -146,6 +152,12 @@ start)
                 echo optoe1 0x50 > /sys/bus/i2c/devices/i2c-$n/new_device
         sleep 0.1
         done
+
+	# Set pca9548 idle_state
+	echo -2 > /sys/bus/i2c/devices/i2c-${devnum}/${devnum}-0071/idle_state
+	echo -2 > /sys/bus/i2c/devices/i2c-${devnum}/${devnum}-0073/idle_state
+	echo -2 > /sys/bus/i2c/devices/i2c-${devnum}/${devnum}-0077/idle_state
+	sleep 0.1
 
 	bus_en=8
 	cfg_r=`i2cget -y -f 8 0x60 0xD1`

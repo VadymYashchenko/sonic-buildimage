@@ -22,9 +22,14 @@ parameters:
   - sonic-6asic-vs.img.gz
 
 steps:
+- template: cleanup.yml
 - checkout: self
   clean: true
   displayName: 'checkout sonic-mgmt repo'
+
+- script: |
+    sudo rm -rf ../target
+  displayName: "Cleanup"
 
 - task: DownloadPipelineArtifact@2
   inputs:
@@ -51,7 +56,6 @@ steps:
     rm -rf $(Build.ArtifactStagingDirectory)/*
     docker exec sonic-mgmt bash -c "/data/sonic-mgmt/tests/kvmtest.sh -en -T ${{ parameters.tbtype }} ${{ parameters.tbname }} ${{ parameters.dut }} ${{ parameters.section }}"
   displayName: "Run tests"
-
 - script: |
     # save dut state if test fails
     virsh_version=$(virsh --version)

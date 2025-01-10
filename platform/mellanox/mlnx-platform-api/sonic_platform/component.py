@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES.
+# Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES.
 # Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,8 @@ try:
     import glob
     import tempfile
     import subprocess
+    from sonic_py_common import device_info
+    from sonic_py_common.general import check_output_pipe
     if sys.version_info[0] > 2:
         import configparser
     else:
@@ -51,8 +53,8 @@ except ImportError as e:
 class MPFAManager(object):
     MPFA_EXTENSION = '.mpfa'
 
-    MPFA_EXTRACT_COMMAND = 'tar xzf {} -C {}'
-    MPFA_CLEANUP_COMMAND = 'rm -rf {}'
+    MPFA_EXTRACT_COMMAND = ['tar', 'xzf', '', '-C', '']
+    MPFA_CLEANUP_COMMAND = ['rm', '-rf', '']
 
     def __init__(self, mpfa_path):
         self.__mpfa_path = mpfa_path
@@ -77,8 +79,9 @@ class MPFAManager(object):
     def __extract_contents(self, mpfa_path):
         contents_path = tempfile.mkdtemp(prefix='mpfa-')
 
-        cmd = self.MPFA_EXTRACT_COMMAND.format(mpfa_path, contents_path)
-        subprocess.check_call(cmd.split(), universal_newlines=True)
+        self.MPFA_EXTRACT_COMMAND[2] = mpfa_path
+        self.MPFA_EXTRACT_COMMAND[4] = contents_path
+        subprocess.check_call(self.MPFA_EXTRACT_COMMAND, universal_newlines=True)
 
         self.__contents_path = contents_path
 
@@ -104,8 +107,8 @@ class MPFAManager(object):
 
     def cleanup(self):
         if os.path.exists(self.__contents_path):
-            cmd = self.MPFA_CLEANUP_COMMAND.format(self.__contents_path)
-            subprocess.check_call(cmd.split(), universal_newlines=True)
+            self.MPFA_CLEANUP_COMMAND[2] = self.__contents_path
+            subprocess.check_call(self.MPFA_CLEANUP_COMMAND, universal_newlines=True)
 
         self.__contents_path = None
         self.__metadata = None
@@ -121,25 +124,37 @@ class MPFAManager(object):
 
 
 class ONIEUpdater(object):
-    ONIE_FW_UPDATE_CMD_ADD = '/usr/bin/mlnx-onie-fw-update.sh add {}'
-    ONIE_FW_UPDATE_CMD_REMOVE = '/usr/bin/mlnx-onie-fw-update.sh remove {}'
-    ONIE_FW_UPDATE_CMD_UPDATE = '/usr/bin/mlnx-onie-fw-update.sh update'
-    ONIE_FW_UPDATE_CMD_INSTALL = '/usr/bin/mlnx-onie-fw-update.sh update --no-reboot'
-    ONIE_FW_UPDATE_CMD_SHOW_PENDING = '/usr/bin/mlnx-onie-fw-update.sh show-pending'
+    ONIE_FW_UPDATE_CMD_ADD = ['/usr/bin/mlnx-onie-fw-update.sh', 'add', '']
+    ONIE_FW_UPDATE_CMD_REMOVE = ['/usr/bin/mlnx-onie-fw-update.sh', 'remove', '']
+    ONIE_FW_UPDATE_CMD_UPDATE = ['/usr/bin/mlnx-onie-fw-update.sh', 'update']
+    ONIE_FW_UPDATE_CMD_INSTALL = ['/usr/bin/mlnx-onie-fw-update.sh', 'update', '--no-reboot']
+    ONIE_FW_UPDATE_CMD_SHOW_PENDING = ['/usr/bin/mlnx-onie-fw-update.sh', 'show-pending']
 
-    ONIE_VERSION_PARSE_PATTERN = '([0-9]{4})\.([0-9]{2})-([0-9]+)\.([0-9]+)\.([0-9]+)-([0-9]+)'
+    ONIE_VERSION_PARSE_PATTERN = '([0-9]{4})\.([0-9]{2})-([0-9]+)\.([0-9]+)\.([0-9]+)-?(rc[0-9]+)?-?(dev)?-([0-9]+)'
     ONIE_VERSION_BASE_PARSE_PATTERN = '([0-9]+)\.([0-9]+)\.([0-9]+)'
     ONIE_VERSION_REQUIRED = '5.2.0016'
 
     ONIE_VERSION_ATTR = 'onie_version'
     ONIE_NO_PENDING_UPDATES_ATTR = 'No pending firmware updates present'
 
-    ONIE_IMAGE_INFO_COMMAND = '/bin/bash {} -q -i'
+    ONIE_IMAGE_INFO_COMMAND = ['/bin/bash', '', '-q', '-i']
 
-    BIOS_UPDATE_FILE_EXT = '.rom'
+    # Upgrading fireware from ONIE is not supported from the beginning on some platforms, like SN2700.
+    # There is a logic to check the ONIE version in order to know whether it is supported.
+    # If it is not supported, we will not proceed and print some error message.
+    # For SN2201, upgrading fireware from ONIE is supported from day one so we do not need to check it.
+    PLATFORM_ALWAYS_SUPPORT_UPGRADE = ['x86_64-nvidia_sn2201-r0']
+
+    BIOS_UPDATE_FILE_EXT_ROM = '.rom'
+    BIOS_UPDATE_FILE_EXT_CAB = '.cab'
+
+    def __init__(self):
+        self.platform = device_info.get_platform()
 
     def __add_prefix(self, image_path):
-        if self.BIOS_UPDATE_FILE_EXT not in image_path:
+        if image_path.endswith(self.BIOS_UPDATE_FILE_EXT_CAB):
+            return image_path
+        elif self.BIOS_UPDATE_FILE_EXT_ROM not in image_path:
             rename_path = "/tmp/00-{}".format(os.path.basename(image_path))
         else:
             rename_path = "/tmp/99-{}".format(os.path.basename(image_path))
@@ -156,14 +171,14 @@ class ONIEUpdater(object):
             self.__umount_onie_fs()
 
         cmd = "fdisk -l | grep 'ONIE boot' | awk '{print $1}'"
-        fs_path = subprocess.check_output(cmd,
-                                          stderr=subprocess.STDOUT,
-                                          shell=True,
-                                          universal_newlines=True).rstrip('\n')
+        cmd1 = ['fdisk', '-l']
+        cmd2 = ['grep', 'ONIE boot']
+        cmd3 = ['awk', '{print $1}']
+        fs_path = check_output_pipe(cmd1, cmd2, cmd3).rstrip('\n')
 
         os.mkdir(fs_mountpoint)
-        cmd = "mount -n -r -t ext4 {} {}".format(fs_path, fs_mountpoint)
-        subprocess.check_call(cmd, shell=True, universal_newlines=True)
+        cmd = ["mount", "-n", "-r", "-t", "ext4", fs_path, fs_mountpoint]
+        subprocess.check_call(cmd, universal_newlines=True)
 
         fs_onie_path = os.path.join(fs_mountpoint, 'onie/tools/lib/onie')
         os.symlink(fs_onie_path, onie_path)
@@ -178,8 +193,8 @@ class ONIEUpdater(object):
             os.unlink(onie_path)
 
         if os.path.ismount(fs_mountpoint):
-            cmd = "umount -rf {}".format(fs_mountpoint)
-            subprocess.check_call(cmd, shell=True, universal_newlines=True)
+            cmd = ["umount", "-rf", fs_mountpoint]
+            subprocess.check_call(cmd, universal_newlines=True)
 
         if os.path.exists(fs_mountpoint):
             os.rmdir(fs_mountpoint)
@@ -187,20 +202,20 @@ class ONIEUpdater(object):
     def __stage_update(self, image_path):
         rename_path = self.__add_prefix(image_path)
 
-        cmd = self.ONIE_FW_UPDATE_CMD_ADD.format(rename_path)
+        self.ONIE_FW_UPDATE_CMD_ADD[2] = rename_path
 
         try:
-            subprocess.check_call(cmd.split(), universal_newlines=True)
+            subprocess.check_call(self.ONIE_FW_UPDATE_CMD_ADD, universal_newlines=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Failed to stage firmware update: {}".format(str(e)))
 
     def __unstage_update(self, image_path):
         rename_path = self.__add_prefix(image_path)
 
-        cmd = self.ONIE_FW_UPDATE_CMD_REMOVE.format(os.path.basename(rename_path))
+        self.ONIE_FW_UPDATE_CMD_REMOVE[2] = os.path.basename(rename_path)
 
         try:
-            subprocess.check_call(cmd.split(), universal_newlines=True)
+            subprocess.check_call(self.ONIE_FW_UPDATE_CMD_REMOVE, universal_newlines=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Failed to unstage firmware update: {}".format(str(e)))
 
@@ -211,7 +226,7 @@ class ONIEUpdater(object):
             cmd = self.ONIE_FW_UPDATE_CMD_INSTALL
 
         try:
-            subprocess.check_call(cmd.split(), universal_newlines=True)
+            subprocess.check_call(cmd, universal_newlines=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Failed to trigger firmware update: {}".format(str(e)))
 
@@ -219,7 +234,7 @@ class ONIEUpdater(object):
         cmd = self.ONIE_FW_UPDATE_CMD_SHOW_PENDING
 
         try:
-            output = subprocess.check_output(cmd.split(),
+            output = subprocess.check_output(cmd,
                                              stderr=subprocess.STDOUT,
                                              universal_newlines=True).rstrip('\n')
         except subprocess.CalledProcessError as e:
@@ -266,7 +281,9 @@ class ONIEUpdater(object):
         onie_major = m.group(3)
         onie_minor = m.group(4)
         onie_release = m.group(5)
-        onie_baudrate = m.group(6)
+        onie_rc = m.group(6)
+        onie_signtype = m.group(7)
+        onie_baudrate = m.group(8)
 
         return onie_year, onie_month, onie_major, onie_minor, onie_release, onie_baudrate
 
@@ -304,10 +321,10 @@ class ONIEUpdater(object):
         try:
             self.__mount_onie_fs()
 
-            cmd = self.ONIE_IMAGE_INFO_COMMAND.format(image_path)
+            self.ONIE_IMAGE_INFO_COMMAND[1] = image_path
 
             try:
-                output = subprocess.check_output(cmd.split(),
+                output = subprocess.check_output(self.ONIE_IMAGE_INFO_COMMAND,
                                                  stderr=subprocess.STDOUT,
                                                  universal_newlines=True).rstrip('\n')
             except subprocess.CalledProcessError as e:
@@ -336,6 +353,9 @@ class ONIEUpdater(object):
             raise
 
     def is_non_onie_firmware_update_supported(self):
+        if self.platform in self.PLATFORM_ALWAYS_SUPPORT_UPGRADE:
+            return True
+
         current_version = self.get_onie_version()
         _, _, major1, minor1, release1, _ = self.parse_onie_version(current_version)
         version1 = int("{}{}{}".format(major1, minor1, release1))
@@ -399,25 +419,6 @@ class Component(ComponentBase):
 
         return result
 
-    @staticmethod
-    def _get_command_result(cmdline):
-        try:
-            proc = subprocess.Popen(cmdline,
-                                    stdout=subprocess.PIPE,
-                                    shell=True,
-                                    stderr=subprocess.STDOUT,
-                                    universal_newlines=True)
-            stdout = proc.communicate()[0]
-            rc = proc.wait()
-            result = stdout.rstrip('\n')
-            if rc != 0:
-                raise RuntimeError("Failed to execute command {}, return code {}, message {}".format(cmdline, rc, stdout))
-
-        except OSError as e:
-            raise RuntimeError("Failed to execute command {} due to {}".format(cmdline, repr(e)))
-
-        return result
-
     def _check_file_validity(self, image_path):
         if not os.path.isfile(image_path):
             print("ERROR: File {} doesn't exist or is not a file".format(image_path))
@@ -425,7 +426,7 @@ class Component(ComponentBase):
 
         name_list = os.path.splitext(image_path)
         if self.image_ext_name is not None:
-            if name_list[1] != self.image_ext_name:
+            if name_list[1] not in self.image_ext_name:
                 print("ERROR: Extend name of file {} is wrong. Image for {} should have extend name {}".format(image_path, self.name, self.image_ext_name))
                 return False
 
@@ -481,17 +482,17 @@ class ComponentONIE(Component):
 class ComponentSSD(Component):
     COMPONENT_NAME = 'SSD'
     COMPONENT_DESCRIPTION = 'SSD - Solid-State Drive'
-    COMPONENT_FIRMWARE_EXTENSION = '.pkg'
+    COMPONENT_FIRMWARE_EXTENSION = ['.pkg']
 
     FIRMWARE_VERSION_ATTR = 'Firmware Version'
     AVAILABLE_FIRMWARE_VERSION_ATTR = 'Available Firmware Version'
     POWER_CYCLE_REQUIRED_ATTR = 'Power Cycle Required'
     UPGRADE_REQUIRED_ATTR = 'Upgrade Required'
 
-    SSD_INFO_COMMAND = "/usr/bin/mlnx-ssd-fw-update.sh -q"
-    SSD_FIRMWARE_INFO_COMMAND = "/usr/bin/mlnx-ssd-fw-update.sh -q -i {}"
-    SSD_FIRMWARE_INSTALL_COMMAND = "/usr/bin/mlnx-ssd-fw-update.sh --no-power-cycle -y -u -i {}"
-    SSD_FIRMWARE_UPDATE_COMMAND = "/usr/bin/mlnx-ssd-fw-update.sh -y -u -i {}"
+    SSD_INFO_COMMAND = ["/usr/bin/mlnx-ssd-fw-update.sh", "-q"]
+    SSD_FIRMWARE_INFO_COMMAND = ["/usr/bin/mlnx-ssd-fw-update.sh", "-q", "-i", ""]
+    SSD_FIRMWARE_INSTALL_COMMAND = ["/usr/bin/mlnx-ssd-fw-update.sh", "--no-power-cycle", "-y", "-u", "-i", ""]
+    SSD_FIRMWARE_UPDATE_COMMAND = ["/usr/bin/mlnx-ssd-fw-update.sh", "-y", "-u", "-i", ""]
 
     def __init__(self):
         super(ComponentSSD, self).__init__()
@@ -505,13 +506,15 @@ class ComponentSSD(Component):
             return False
 
         if allow_reboot:
-            cmd = self.SSD_FIRMWARE_UPDATE_COMMAND.format(image_path)
+            self.SSD_FIRMWARE_UPDATE_COMMAND[4] = image_path
+            cmd = self.SSD_FIRMWARE_UPDATE_COMMAND
         else:
-            cmd = self.SSD_FIRMWARE_INSTALL_COMMAND.format(image_path)
+            self.SSD_FIRMWARE_INSTALL_COMMAND[5] = image_path
+            cmd = self.SSD_FIRMWARE_INSTALL_COMMAND
 
         try:
             print("INFO: Installing {} firmware update".format(self.name))
-            subprocess.check_call(cmd.split(), universal_newlines=True)
+            subprocess.check_call(cmd, universal_newlines=True)
         except subprocess.CalledProcessError as e:
             print("ERROR: Failed to update {} firmware: {}".format(self.name, str(e)))
             return False
@@ -534,8 +537,8 @@ class ComponentSSD(Component):
         try:
             reboot_required = self.get_firmware_update_notification(image_path) is not None
         except RuntimeError as e:
-            return FW_AUTO_ERR_UNKNOWN                    
-        
+            return FW_AUTO_ERR_UNKNOWN
+
         # Update if no reboot needed
         if not reboot_required:
             self.update_firmware(image_path)
@@ -549,10 +552,8 @@ class ComponentSSD(Component):
         return FW_AUTO_SCHEDULED
 
     def get_firmware_version(self):
-        cmd = self.SSD_INFO_COMMAND
-
         try:
-            output = subprocess.check_output(cmd.split(),
+            output = subprocess.check_output(self.SSD_INFO_COMMAND,
                                              stderr=subprocess.STDOUT,
                                              universal_newlines=True).rstrip('\n')
         except subprocess.CalledProcessError as e:
@@ -565,10 +566,10 @@ class ComponentSSD(Component):
         raise RuntimeError("Failed to parse {} version".format(self.name))
 
     def get_available_firmware_version(self, image_path):
-        cmd = self.SSD_FIRMWARE_INFO_COMMAND.format(image_path)
+        self.SSD_FIRMWARE_INFO_COMMAND[3] = image_path
 
         try:
-            output = subprocess.check_output(cmd.split(),
+            output = subprocess.check_output(self.SSD_FIRMWARE_INFO_COMMAND,
                                              stderr=subprocess.STDOUT,
                                              universal_newlines=True).rstrip('\n')
         except subprocess.CalledProcessError as e:
@@ -600,10 +601,10 @@ class ComponentSSD(Component):
         return available_firmware_version
 
     def get_firmware_update_notification(self, image_path):
-        cmd = self.SSD_FIRMWARE_INFO_COMMAND.format(image_path)
+        self.SSD_FIRMWARE_INFO_COMMAND[3] = image_path
 
         try:
-            output = subprocess.check_output(cmd.split(),
+            output = subprocess.check_output(self.SSD_FIRMWARE_INFO_COMMAND,
                                              stderr=subprocess.STDOUT,
                                              universal_newlines=True).rstrip('\n')
         except subprocess.CalledProcessError as e:
@@ -644,9 +645,9 @@ class ComponentSSD(Component):
 class ComponentBIOS(Component):
     COMPONENT_NAME = 'BIOS'
     COMPONENT_DESCRIPTION = 'BIOS - Basic Input/Output System'
-    COMPONENT_FIRMWARE_EXTENSION = '.rom'
+    COMPONENT_FIRMWARE_EXTENSION = ['.rom', '.cab']
 
-    BIOS_VERSION_COMMAND = 'dmidecode --oem-string 1'
+    BIOS_VERSION_COMMAND = ['dmidecode', '--oem-string', '1']
 
     def __init__(self):
         super(ComponentBIOS, self).__init__()
@@ -674,10 +675,8 @@ class ComponentBIOS(Component):
         return True
 
     def get_firmware_version(self):
-        cmd = self.BIOS_VERSION_COMMAND
-
         try:
-            version = subprocess.check_output(cmd.split(),
+            version = subprocess.check_output(self.BIOS_VERSION_COMMAND,
                                               stderr=subprocess.STDOUT,
                                               universal_newlines=True).rstrip('\n')
         except subprocess.CalledProcessError as e:
@@ -698,13 +697,43 @@ class ComponentBIOS(Component):
         self.__install_firmware(image_path)
 
 
+class ComponentBIOSSN2201(Component):
+    COMPONENT_NAME = 'BIOS'
+    COMPONENT_DESCRIPTION = 'BIOS - Basic Input/Output System'
+
+    BIOS_VERSION_COMMAND = ['dmidecode', '-t0']
+
+    def __init__(self):
+        super(ComponentBIOSSN2201, self).__init__()
+
+        self.name = self.COMPONENT_NAME
+        self.description = self.COMPONENT_DESCRIPTION
+
+    def get_firmware_version(self):
+        try:
+            output = subprocess.check_output(self.BIOS_VERSION_COMMAND,
+                                             stderr=subprocess.STDOUT,
+                                             universal_newlines=True).rstrip('\n')
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError("Failed to get {} version: {}".format(self.name, str(e)))
+
+        match = re.search('Version: (.*)', output)
+        if match:
+            version = match.group(1)
+        else:
+            version = 'Unknown version'
+
+        return version
+
+
 class ComponentCPLD(Component):
     COMPONENT_NAME = 'CPLD{}'
     COMPONENT_DESCRIPTION = 'CPLD - Complex Programmable Logic Device'
-    COMPONENT_FIRMWARE_EXTENSION = '.vme'
+    COMPONENT_FIRMWARE_EXTENSION = ['.vme']
 
     MST_DEVICE_PATH = '/dev/mst'
     MST_DEVICE_PATTERN = 'mt[0-9]*_pci_cr0'
+    FW_VERSION_FORMAT = 'CPLD{}_REV{}{}'
 
     CPLD_NUMBER_FILE = '/var/run/hw-management/config/cpld_num'
     CPLD_PART_NUMBER_FILE = '/var/run/hw-management/system/cpld{}_pn'
@@ -719,7 +748,7 @@ class ComponentCPLD(Component):
     CPLD_PART_NUMBER_DEFAULT = '0'
     CPLD_VERSION_MINOR_DEFAULT = '0'
 
-    CPLD_FIRMWARE_UPDATE_COMMAND = 'cpldupdate --dev {} --print-progress {}'
+    CPLD_FIRMWARE_UPDATE_COMMAND = ['cpldupdate', '--dev', '', '--print-progress', '']
 
     def __init__(self, idx):
         super(ComponentCPLD, self).__init__()
@@ -744,19 +773,20 @@ class ComponentCPLD(Component):
 
         return mst_dev_list[0]
 
-    def __install_firmware(self, image_path):
+    def _install_firmware(self, image_path):
         if not self._check_file_validity(image_path):
             return False
 
         mst_dev = self.__get_mst_device()
         if mst_dev is None:
             return False
-
-        cmd = self.CPLD_FIRMWARE_UPDATE_COMMAND.format(mst_dev, image_path)
+        self.CPLD_FIRMWARE_UPDATE_COMMAND[2] = mst_dev
+        self.CPLD_FIRMWARE_UPDATE_COMMAND[4] = image_path
+        cmd = self.CPLD_FIRMWARE_UPDATE_COMMAND
 
         try:
             print("INFO: Installing {} firmware update: path={}".format(self.name, image_path))
-            subprocess.check_call(cmd.split(), universal_newlines=True)
+            subprocess.check_call(cmd, universal_newlines=True)
         except subprocess.CalledProcessError as e:
             print("ERROR: Failed to update {} firmware: {}".format(self.name, str(e)))
             return False
@@ -782,9 +812,9 @@ class ComponentCPLD(Component):
         # Install burn. Error if fail.
         if not self.install_firmware(image_path):
             return FW_AUTO_ERR_UNKNOWN
-            
+
         # Schedule refresh
-        return FW_AUTO_SCHEDULED    
+        return FW_AUTO_SCHEDULED
 
     def get_firmware_version(self):
         part_number_file = self.CPLD_PART_NUMBER_FILE.format(self.idx)
@@ -805,7 +835,7 @@ class ComponentCPLD(Component):
         version = version.rstrip('\n').zfill(self.CPLD_VERSION_MAX_LENGTH)
         version_minor = version_minor.rstrip('\n').zfill(self.CPLD_VERSION_MINOR_MAX_LENGTH)
 
-        return "CPLD{}_REV{}{}".format(part_number, version, version_minor)
+        return self.FW_VERSION_FORMAT.format(part_number, version, version_minor)
 
     def get_available_firmware_version(self, image_path):
         with MPFAManager(image_path) as mpfa:
@@ -816,7 +846,7 @@ class ComponentCPLD(Component):
 
     def get_firmware_update_notification(self, image_path):
         name, ext = os.path.splitext(os.path.basename(image_path))
-        if ext == self.COMPONENT_FIRMWARE_EXTENSION:
+        if ext in self.COMPONENT_FIRMWARE_EXTENSION:
             return "Power cycle (with 30 sec delay) or refresh image is required to complete {} firmware update".format(self.name)
 
         return "Immediate power cycle is required to complete {} firmware update".format(self.name)
@@ -830,9 +860,9 @@ class ComponentCPLD(Component):
                 burn_firmware = mpfa.get_metadata().get('firmware', 'burn')
 
                 print("INFO: Processing {} burn file: firmware install".format(self.name))
-                return self.__install_firmware(os.path.join(mpfa.get_path(), burn_firmware))
+                return self._install_firmware(os.path.join(mpfa.get_path(), burn_firmware))
         else:
-            return self.__install_firmware(image_path)
+            return self._install_firmware(image_path)
 
     def update_firmware(self, image_path):
         with MPFAManager(image_path) as mpfa:
@@ -845,11 +875,11 @@ class ComponentCPLD(Component):
             refresh_firmware = mpfa.get_metadata().get('firmware', 'refresh')
 
             print("INFO: Processing {} burn file: firmware install".format(self.name))
-            if not self.__install_firmware(os.path.join(mpfa.get_path(), burn_firmware)):
+            if not self._install_firmware(os.path.join(mpfa.get_path(), burn_firmware)):
                 return
 
             print("INFO: Processing {} refresh file: firmware update".format(self.name))
-            self.__install_firmware(os.path.join(mpfa.get_path(), refresh_firmware))
+            self._install_firmware(os.path.join(mpfa.get_path(), refresh_firmware))
 
     @classmethod
     def get_component_list(cls):
@@ -862,3 +892,59 @@ class ComponentCPLD(Component):
             component_list.append(cls(cpld_idx))
 
         return component_list
+
+
+class ComponentCPLDSN2201(ComponentCPLD):
+    CPLD_FIRMWARE_UPDATE_COMMAND = ['cpldupdate', '--gpio', '', '--uncustomized', '--print-progress']
+
+    def _install_firmware(self, image_path):
+        self.CPLD_FIRMWARE_UPDATE_COMMAND[2] = image_path
+
+        try:
+            print("INFO: Installing {} firmware update: path={}".format(self.name, image_path))
+            subprocess.check_call(self.CPLD_FIRMWARE_UPDATE_COMMAND, universal_newlines=True)
+        except subprocess.CalledProcessError as e:
+            print("ERROR: Failed to update {} firmware: {}".format(self.name, str(e)))
+            return False
+
+        return True
+
+class ComponentCPLDSN4280(ComponentCPLD):
+    CPLD_FIRMWARE_UPDATE_COMMAND = ['cpldupdate', '--gpio', '--print-progress', '']
+
+    def _install_firmware(self, image_path):
+        self.CPLD_FIRMWARE_UPDATE_COMMAND[3] = image_path
+
+        try:
+            print("INFO: Installing {} firmware update: path={}".format(self.name, image_path))
+            subprocess.check_call(self.CPLD_FIRMWARE_UPDATE_COMMAND, universal_newlines=True)
+        except subprocess.CalledProcessError as e:
+            print("ERROR: Failed to update {} firmware: {}".format(self.name, str(e)))
+            return False
+
+        return True
+
+class ComponenetFPGADPU(ComponentCPLD):
+    CPLD_NUMBER_FILE = '/var/run/hw-management/config/dpu_num'
+
+    COMPONENT_NAME = 'DPU{}_FPGA'
+    COMPONENT_DESCRIPTION = 'FPGA - Field-Programmable Gate Array'
+    FW_VERSION_FORMAT = 'FPGA{}_REV{}{}'
+
+    CPLD_PART_NUMBER_FILE = '/var/run/hw-management/dpu{}/system/fpga1_pn'
+    CPLD_VERSION_FILE = '/var/run/hw-management/dpu{}/system/fpga1_version'
+    CPLD_VERSION_MINOR_FILE = '/var/run/hw-management/dpu{}/system/fpga1_version_min'
+
+    CPLD_FIRMWARE_UPDATE_COMMAND = ['cpldupdate', '--cpld_chain', '2', '--gpio', '--print-progress', '']
+
+    def _install_firmware(self, image_path):
+        self.CPLD_FIRMWARE_UPDATE_COMMAND[5] = image_path
+
+        try:
+            print("INFO: Installing {} firmware update: path={}".format(self.name, image_path))
+            subprocess.check_call(self.CPLD_FIRMWARE_UPDATE_COMMAND, universal_newlines=True)
+        except subprocess.CalledProcessError as e:
+            print("ERROR: Failed to update {} firmware: {}".format(self.name, str(e)))
+            return False
+
+        return True
