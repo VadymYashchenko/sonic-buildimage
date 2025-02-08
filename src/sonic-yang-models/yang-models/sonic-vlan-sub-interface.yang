@@ -2,7 +2,7 @@ module sonic-vlan-sub-interface {
 
     yang-version 1.1;
 
-    namespace  "http://github.com/Azure/sonic-vlan-sub-interface";
+    namespace  "http://github.com/sonic-net/sonic-vlan-sub-interface";
 
     prefix vlan-sub-interface;
 
@@ -37,6 +37,14 @@ module sonic-vlan-sub-interface {
 
                 description "VLAN_SUB_INTERFACE part of config_db.json with vrf";
 
+                // encap vlan is mandatory for short name subinterfaces
+                must "(substring-before(name, '.') = /port:sonic-port/port:PORT/port:PORT_LIST/port:name) or " +
+                     "(substring-before(name, '.') = /lag:sonic-portchannel/lag:PORTCHANNEL/lag:PORTCHANNEL_LIST/lag:name) or " +
+                     "vlan"
+                {
+                    error-message "Must condition not satisfied, no encap vlan provided for short-name format vlan sub interface";
+                }
+
                 key "name";
 
                 leaf name {
@@ -63,6 +71,17 @@ module sonic-vlan-sub-interface {
                 leaf vrf_name {
                     type leafref {
                         path "/vrf:sonic-vrf/vrf:VRF/vrf:VRF_LIST/vrf:name";
+                    }
+                }
+
+                leaf loopback_action {
+                    description "Packet action when a packet ingress and gets routed on the same IP interface";
+                    type stypes:loopback_action;
+                }
+
+                leaf vlan {
+                    type uint16 {
+                        range 1..4094;
                     }
                 }
             }

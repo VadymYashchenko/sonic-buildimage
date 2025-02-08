@@ -91,9 +91,6 @@
                 "name": "Ambient CPU Board Temp"
             },
             {
-                "name": "Ambient Switch Board Temp"
-            },
-            {
                 "name": "CPU Pack Temp"
             },
             {
@@ -104,6 +101,9 @@
             },
             {
                 "name": "ASIC"
+            },
+            {
+                "name": "SODIMM 1 Temp"
             }
         ],
         "sfps": [{

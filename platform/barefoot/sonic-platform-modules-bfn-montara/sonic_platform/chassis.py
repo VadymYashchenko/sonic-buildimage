@@ -12,9 +12,10 @@ try:
     from sonic_platform.sfp import Sfp
     from sonic_platform.psu import psu_list_get
     from sonic_platform.fan_drawer import fan_drawer_list_get
-    from sonic_platform.thermal import thermal_list_get
-    from eeprom import Eeprom
-    from platform_utils import file_create
+    from sonic_platform.thermal import chassis_thermals_list_get
+    from sonic_platform.platform_utils import file_create
+    from sonic_platform.eeprom import Eeprom
+    from sonic_platform.watchdog import Watchdog
 
     from sonic_platform.platform_thrift_client import pltfm_mgr_ready
     from sonic_platform.platform_thrift_client import thrift_try
@@ -41,11 +42,15 @@ class Chassis(ChassisBase):
         ChassisBase.__init__(self)
 
         self.__eeprom = None
+        self.__tlv_bin_eeprom = None
+        self.__tlv_dict_eeprom = None
+
         self.__fan_drawers = None
         self.__fan_list = None
         self.__thermals = None
         self.__psu_list = None
         self.__sfp_list = None
+        self.__watchdog = None
 
         self.ready = False
         self.phy_port_cur_state = {}
@@ -65,6 +70,28 @@ class Chassis(ChassisBase):
 
     @_eeprom.setter
     def _eeprom(self, value):
+        pass
+
+    @property
+    def _tlv_bin_eeprom(self):
+        if self.__tlv_bin_eeprom is None:
+            self.__tlv_bin_eeprom = self._eeprom.get_raw_data()
+        return self.__tlv_bin_eeprom
+
+    @property
+    def _tlv_dict_eeprom(self):
+        if self.__tlv_dict_eeprom is None:
+            self.__tlv_dict_eeprom = self._eeprom.get_data()
+        return self.__tlv_dict_eeprom
+
+    @property
+    def _watchdog(self):
+        if self.__watchdog is None:
+            self.__watchdog = Watchdog()
+        return self.__watchdog
+
+    @_watchdog.setter
+    def _watchdog(self, value):
         pass
 
     @property
@@ -92,7 +119,7 @@ class Chassis(ChassisBase):
     @property
     def _thermal_list(self):
         if self.__thermals is None:
-            self.__thermals = thermal_list_get()
+            self.__thermals = chassis_thermals_list_get()
         return self.__thermals
 
     @_thermal_list.setter
@@ -152,7 +179,7 @@ class Chassis(ChassisBase):
         Returns:
             string: The name of the chassis
         """
-        return self._eeprom.modelstr()
+        return self._eeprom.modelstr(self._tlv_bin_eeprom)
 
     def get_presence(self):
         """
@@ -168,7 +195,7 @@ class Chassis(ChassisBase):
         Returns:
             string: Model/part number of chassis
         """
-        return self._eeprom.part_number_str()
+        return self._eeprom.part_number_str(self._tlv_bin_eeprom)
 
     def get_serial(self):
         """
@@ -176,7 +203,7 @@ class Chassis(ChassisBase):
         Returns:
             string: Serial number of chassis
         """
-        return self._eeprom.serial_number_str()
+        return self._eeprom.serial_number_str(self._tlv_bin_eeprom)
 
     def get_revision(self):
         """
@@ -184,7 +211,8 @@ class Chassis(ChassisBase):
         Returns:
             string: Revision number of chassis
         """
-        return self._eeprom.revision_str()
+        return self._tlv_dict_eeprom.get(
+            "0x{:X}".format(Eeprom._TLV_CODE_LABEL_REVISION), 'N/A')
 
     def get_sfp(self, index):
         """
@@ -225,7 +253,7 @@ class Chassis(ChassisBase):
             A string containing the MAC address in the format
             'XX:XX:XX:XX:XX:XX'
         """
-        return self._eeprom.base_mac_addr()
+        return self._eeprom.base_mac_addr(self._tlv_bin_eeprom)
 
     def get_system_eeprom_info(self):
         """
@@ -236,7 +264,7 @@ class Chassis(ChassisBase):
             OCP ONIE TlvInfo EEPROM format and values are their corresponding
             values.
         """
-        return self._eeprom.system_eeprom_info()
+        return self._tlv_dict_eeprom
 
     def __get_transceiver_change_event(self, timeout=0):
         forever = False

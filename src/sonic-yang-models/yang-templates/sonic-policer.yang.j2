@@ -7,7 +7,7 @@ module sonic-policer {
 
 	yang-version 1.1;
 
-	namespace "http://github.com/Azure/sonic-policer";
+	namespace "http://github.com/sonic-net/sonic-policer";
 	prefix policer;
 
 	import sonic-types {
@@ -42,11 +42,11 @@ module sonic-policer {
                                         type stypes:policer_mode;
 					description "Policer mode";
 				}
- 
+
   				leaf color {
                                         type stypes:policer_color_source;
 					description "Policer color Source";
-				} 
+				}
 
 				leaf cir {
 					type uint64;

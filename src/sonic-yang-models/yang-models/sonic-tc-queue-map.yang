@@ -2,9 +2,13 @@ module sonic-tc-queue-map {
 
     yang-version 1.1;
 
-    namespace "http://github.com/Azure/sonic-tc-queue-map";
+    namespace "http://github.com/sonic-net/sonic-tc-queue-map";
 
     prefix tqm;
+
+    import sonic-types {
+        prefix stypes;
+    }
 
     organization
         "SONiC";
@@ -45,17 +49,12 @@ module sonic-tc-queue-map {
                     key "tc";
 
                     leaf tc {
-                        type string {
-                            pattern "[0-7]?" {
-                                error-message "Invalid Traffic Class";
-                                error-app-tag tc-invalid;
-                            }
-                        }
+                        type stypes:tc_type;
                     }
 
                     leaf qindex {
                         type string {
-                            pattern "[0-7]?" {
+                            pattern "[0-9]?" {
                                 error-message "Invalid queue index";
                                 error-app-tag queue-index-invalid;
                             }

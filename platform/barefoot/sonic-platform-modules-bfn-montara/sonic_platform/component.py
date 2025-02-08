@@ -6,6 +6,7 @@ try:
     import json
     from collections import OrderedDict
     from sonic_py_common import device_info
+    from platform_utils import limit_execution_time
 
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
@@ -24,6 +25,7 @@ def get_bios_version():
     except subprocess.CalledProcessError as e:
         raise RuntimeError("Failed to get BIOS version")
 
+@limit_execution_time(1)
 def get_bmc_version():
     """
     Retrieves the firmware version of the BMC
@@ -180,12 +182,10 @@ class Components(ComponentBase):
             self.name = self.bpcp.get_components_list()[self.index]            
         except IndexError as e:
             print("Error: No components found in plaform_components.json")
-        
+
         if (self.name == "BMC"):
-            self.version = get_bmc_version()
             self.description = "Chassis BMC"
         elif (self.name == "BIOS"):
-            self.version = get_bios_version()
             self.description = "Chassis BIOS"
 
     def get_name(self):
@@ -212,6 +212,12 @@ class Components(ComponentBase):
         Returns:
             A string containing the firmware version of the component
         """
+        if self.version == "N/A":
+            if (self.name == "BMC"):
+                self.version = get_bmc_version()
+            elif (self.name == "BIOS"):
+                self.version = get_bios_version()
+
         return self.version
 
     def install_firmware(self, image_path):
